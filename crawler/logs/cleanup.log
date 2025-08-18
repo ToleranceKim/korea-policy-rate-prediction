@@ -1,0 +1,64 @@
+2025-08-18 17:30:39,846 - INFO - 🧹 Starting project cleanup...
+2025-08-18 17:30:39,846 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/archive/bond_pdfs
+2025-08-18 17:30:39,846 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/archive/bond_csvs
+2025-08-18 17:30:39,846 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/archive/test_outputs
+2025-08-18 17:30:39,846 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/logs
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/raw
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/processed
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/monthly
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/merged
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/scripts/batch
+2025-08-18 17:30:39,847 - INFO - ✅ Created directory: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/scripts/utils
+2025-08-18 17:30:39,952 - INFO - 📦 Moved 101 PDF files and 6515 CSV files from BOND
+2025-08-18 17:30:39,992 - INFO - 📦 Moved test file: infomax_test.json
+2025-08-18 17:30:39,992 - INFO - 📦 Moved test file: interest_rates_test.json
+2025-08-18 17:30:39,992 - INFO - 📦 Moved test file: edaily_fixed_test.json
+2025-08-18 17:30:39,993 - INFO - 📦 Moved test file: infomax_test.json
+2025-08-18 17:30:39,993 - INFO - 📦 Moved test file: yh_10year_test.json
+2025-08-18 17:30:39,993 - INFO - 📦 Moved test file: yh_fixed_test.json
+2025-08-18 17:30:40,022 - INFO - 📦 Moved test file: edaily_output.json
+2025-08-18 17:30:40,023 - INFO - 📦 Moved test file: edaily_output.json
+2025-08-18 17:30:40,023 - INFO - 📦 Moved test file: yh_output.json
+2025-08-18 17:30:40,023 - INFO - 📦 Moved test file: yh_output.json
+2025-08-18 17:30:40,024 - INFO - 📦 Moved test file: call_rates_output.json
+2025-08-18 17:30:40,024 - INFO - 📦 Moved test file: mpb_output.json
+2025-08-18 17:30:40,059 - INFO - 📦 Moved test file: edaily_validation.json
+2025-08-18 17:30:40,060 - INFO - 📦 Moved test file: infomax_final_validation.json
+2025-08-18 17:30:40,060 - INFO - 📦 Moved test file: infomax_validation_final.json
+2025-08-18 17:30:40,061 - INFO - 📦 Moved test file: yh_validation.json
+2025-08-18 17:30:40,094 - INFO - 📦 Moved test file: debug_infomax.py
+2025-08-18 17:30:40,095 - INFO - 📦 Moved test file: debug_news.py
+2025-08-18 17:30:40,096 - INFO - 📦 Moved test file: debug_infomax.py
+2025-08-18 17:30:40,127 - INFO - 📦 Moved test file: test_article_content.py
+2025-08-18 17:30:40,127 - INFO - 📝 Moved log file: data_merger.log
+2025-08-18 17:30:40,128 - INFO - 📝 Moved log file: cleanup.log
+2025-08-18 17:30:40,128 - INFO - 📝 Moved log file: batch_collector.log
+2025-08-18 17:30:40,128 - INFO - 📁 Moved monthly_output to /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/monthly
+2025-08-18 17:30:40,129 - INFO - 📁 Moved merged_output to /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/merged
+2025-08-18 17:30:40,129 - INFO - 🔧 Moved utility script: batch_collector.py
+2025-08-18 17:30:40,129 - INFO - 🔧 Moved utility script: data_merger.py
+2025-08-18 17:30:40,129 - INFO - 🔧 Moved utility script: run_batch_collection.py
+2025-08-18 17:30:40,130 - INFO - 🔬 Moved research script: research_yonhap_historical.py
+2025-08-18 17:30:40,130 - INFO - 📄 Created README: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/archive/README.md
+2025-08-18 17:30:40,130 - INFO - 📄 Created README: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/logs/README.md
+2025-08-18 17:30:40,131 - INFO - 📄 Created README: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/data/README.md
+2025-08-18 17:30:40,131 - INFO - 📄 Created README: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/scripts/README.md
+2025-08-18 17:30:40,131 - INFO - 
+🎉 PROJECT CLEANUP COMPLETED
+
+📊 SUMMARY:
+- System files removed: 0
+- PDF files archived: 101
+- CSV files archived: 6515  
+- Test files moved: 20
+- Log files organized: 3
+- Scripts reorganized: 4
+
+📁 NEW STRUCTURE:
+- archive/: 아카이브된 파일들
+- logs/: 로그 파일들
+- data/: 체계적으로 관리되는 데이터
+- scripts/: 정리된 스크립트들
+
+✅ Project is now clean and well-organized!
+        

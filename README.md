@@ -48,9 +48,11 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 <br/>
 
 ## 5. 프로젝트 환경 및 언어
-✔ <b>개발 환경</b> : Visual Studio Code, Jupyter Lab, Notion, Github, SLACK, Google Drive  
+✔ <b>개발 환경</b> : Visual Studio Code, Jupyter Lab, PostgreSQL, Github  
 <br/>
-✔ <b>개발 언어 및 모듈</b> : Python 3.8, Pandas, Numpy, Multiprocessing
+✔ <b>개발 언어 및 모듈</b> : Python 3.9+, PostgreSQL, Pandas, Numpy, eKoNLPy, Scrapy
+<br/>
+✔ <b>데이터베이스</b> : PostgreSQL (한국어 텍스트 최적화, JSONB 지원)
 
 
 <br/>
@@ -64,8 +66,46 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 
 <br/>
 
-## 7. 기타
-- [Notion](https://www.notion.so/970acb4571a942bc999f19e400ced872)
+## 7. 빠른 시작 (Quick Start)
+
+### 환경 설정
+```bash
+# 1. Python 가상환경 생성
+python -m venv mpb_env
+source mpb_env/bin/activate  # Windows: mpb_env\Scripts\activate
+
+# 2. 의존성 설치
+pip install -r requirements.txt
+
+# 3. PostgreSQL 설정
+brew install postgresql  # macOS
+brew services start postgresql
+createdb mpb_stance_mining
+
+# 4. 환경변수 설정
+cp .env.example .env
+# .env 파일을 편집하여 PostgreSQL 설정 입력
+
+# 5. 데이터베이스 스키마 초기화
+psql -U postgres -d mpb_stance_mining -f database/schema.sql
+```
+
+### 실행
+```bash
+# 데이터베이스 연결 테스트
+python database/test_connection.py
+
+# 전체 파이프라인 실행
+python main_pipeline.py --stage full
+
+# 단계별 실행
+python main_pipeline.py --stage crawl
+python main_pipeline.py --stage process
+python main_pipeline.py --stage train
+python main_pipeline.py --stage predict
+```
+
+## 8. 기타
 - [github](https://github.com/sesac-analyst/BOK_TEAM_1/tree/main)
 
 

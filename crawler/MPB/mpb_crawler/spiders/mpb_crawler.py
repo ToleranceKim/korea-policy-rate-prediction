@@ -9,7 +9,7 @@ import requests
 
 class MpbCrawlerSpider(scrapy.Spider):
     name = "mpb_crawler"
-    allowed_domains = ["www.bok.or.kr"]
+    allowed_domains = ["www.bok.or.kr", "file-cdn.bok.or.kr"]
 
     def start_requests(self):
         base_url = 'https://www.bok.or.kr/portal/singl/newsData/listCont.do'
@@ -26,21 +26,25 @@ class MpbCrawlerSpider(scrapy.Spider):
             'depth4': 200789,
         }
 
-        for page_index in range(1, 21): # 21로 해야함
+        for page_index in range(1, 31): # 2014~2025년 약 100차례 회의록 수집
             params['pageIndex'] = page_index
             url = f"{base_url}?{'&'.join([f'{key}={value}' for key, value in params.items()])}"
             yield scrapy.Request(url=url, callback=self.parse)
         
 
     def parse(self, response):
-        # achieve links for pdf downloads
-
         # links for each articles in the list
         for news_item in response.css('li.bbsRowCls'):
-            news_link = news_item.css('a::attr(href)').get()
-            title = news_item.css('a::text').getall()[1].strip()
-            if news_link:
-                yield response.follow(news_link, self.download_pdf, meta={'title':title})
+            news_link = news_item.css('a.title::attr(href)').get()
+            title_element = news_item.css('a.title')
+            
+            if news_link and title_element:
+                title = ''.join(title_element.css('::text').getall()).strip()
+                if title:
+                    self.logger.info(f"Found article: {title}")
+                    yield response.follow(news_link, self.download_pdf, meta={'title': title})
+                else:
+                    self.logger.warning(f"Empty title for link: {news_link}")
 
     def download_pdf(self, response):
         base_url = 'https://www.bok.or.kr'

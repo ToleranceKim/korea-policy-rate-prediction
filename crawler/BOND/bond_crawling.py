@@ -9,15 +9,28 @@ from urllib import request
 from PyPDF2 import PdfReader
 import os
 import csv
-from pykospacing import Spacing
 import shutil
-from tika import parser
+# from pykospacing import Spacing  # 일시적으로 비활성화
+# from tika import parser  # 일시적으로 비활성화
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# 1
-today = "2024-08-11"
-target_day = "2014-08-11"
+# 1 - Command line arguments support for monthly collection
+import sys
+
+# Default date range
+default_start = "2014-08-11"  # 프로젝트 시작일
+default_end = "2025-08-11"    # 확장 종료일
+
+# Check for command line arguments for monthly collection
+if len(sys.argv) >= 3:
+    target_day = sys.argv[1]  # Start date from command line
+    today = sys.argv[2]       # End date from command line
+    print(f"Using custom date range: {target_day} ~ {today}")
+else:
+    target_day = default_start
+    today = default_end
+    print(f"Using default date range: {target_day} ~ {today}")
 
 url = f"https://finance.naver.com/research/debenture_list.naver?keyword=&brokerCode=&searchType=writeDate&writeFromDate={target_day}&writeToDate={today}&x=0&y=0&page=1"
 temp_url = "https://finance.naver.com/"
@@ -75,33 +88,39 @@ def process_report(report_link):
                 file.write(response.content)
                 time.sleep(1)
 
-            # PDF 텍스트 추출
-            parsed = parser.from_file(pdf_name)
-            text = parsed['content']
+            # PDF 텍스트 추출 (PyPDF2 사용)
+            try:
+                with open(pdf_name, 'rb') as pdf_file:
+                    pdf_reader = PdfReader(pdf_file)
+                    text = ""
+                    for page in pdf_reader.pages:
+                        text += page.extract_text()
+                
+                if text:
+                    # 기본적인 텍스트 정제
+                    new_str = re.sub("\n", " ", text)
+                    new_str = re.sub(r'\s+', ' ', new_str)  # 여러 공백을 하나로
+                    kospacing_result = new_str.strip()  # pykospacing 대신 기본 정제
 
-            if text:
-                new_str = re.sub("\n", "", text)
-                new_str = re.sub(" ", "", new_str)
+                    directory = f'./dataset_2'
+                    os.makedirs(directory, exist_ok=True)  # 디렉토리가 없으면 생성
 
-                spacing = Spacing()
-                kospacing_result = spacing(new_str)
+                    # CSV 파일에 데이터 저장
+                    csv_file_path = f'{directory}/{published_date}_{title}_{cop_name}.csv'
+                    with open(csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerow(['Date', 'Title', 'Content', 'Link'])  # CSV 헤더
+                        csvwriter.writerow([published_date, title, kospacing_result, pdf_link])  # CSV 데이터
 
-                directory = f'./dataset_2'
-                os.makedirs(directory, exist_ok=True)  # 디렉토리가 없으면 생성
+                    print(f"Saved CSV: {csv_file_path}")
 
-                # CSV 파일에 데이터 저장
-                csv_file_path = f'{directory}/{published_date}_{title}_{cop_name}.csv'
-                with open(csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
-                    csvwriter = csv.writer(csvfile)
-                    csvwriter.writerow(['Date', 'Title', 'Content', 'Link'])  # CSV 헤더
-                    csvwriter.writerow([published_date, title, kospacing_result, pdf_link])  # CSV 데이터
-
-                print(f"Saved CSV: {csv_file_path}")
-
-                # PDF 파일 삭제
-                os.remove(pdf_name)
-            else:
-                print(f"PDF 파일을 읽을 수 없습니다: {pdf_name}")
+                    # PDF 파일 삭제
+                    os.remove(pdf_name)
+                else:
+                    print(f"PDF 파일을 읽을 수 없습니다: {pdf_name}")
+                    
+            except Exception as e:
+                print(f"PDF 처리 중 오류 발생: {e}")
         else:
             print(f"PDF 파일이 없습니다, 이 경우엔 수집하지 않습니다: {title}")
 

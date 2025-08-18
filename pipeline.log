@@ -1,0 +1,80 @@
+2025-08-18 13:45:06,188 - WARNING - ⚠️  Database connection failed: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-08-18 13:45:06,188 - INFO - 📁 Running in file-only mode (data will be saved as JSON/CSV)
+2025-08-18 13:45:06,188 - INFO - 🕷️  Starting data collection...
+2025-08-18 13:45:06,189 - INFO - Running mpb crawler...
+2025-08-18 13:45:06,189 - INFO - Running MPB minutes crawler...
+2025-08-18 13:45:30,270 - INFO - MPB crawler completed successfully
+2025-08-18 13:45:30,270 - INFO - 📁 MPB data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/MPB/mpb_crawler/mpb_output.json
+2025-08-18 13:45:30,270 - INFO - ✅ mpb crawler completed
+2025-08-18 13:45:30,270 - INFO - Running news crawler...
+2025-08-18 13:45:30,270 - INFO - Running news crawlers...
+2025-08-18 13:45:30,270 - INFO - Running Yonhap News crawler...
+2025-08-18 13:47:12,628 - WARNING - ⚠️  Database connection failed: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-08-18 13:47:12,628 - INFO - 📁 Running in file-only mode (data will be saved as JSON/CSV)
+2025-08-18 13:47:12,628 - INFO - 🕷️  Starting data collection...
+2025-08-18 13:47:12,628 - INFO - Running mpb crawler...
+2025-08-18 13:47:12,628 - INFO - Running MPB minutes crawler...
+2025-08-18 13:47:36,042 - INFO - MPB crawler completed successfully
+2025-08-18 13:47:36,043 - INFO - 📁 MPB data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/MPB/mpb_crawler/mpb_output.json
+2025-08-18 13:47:36,043 - INFO - ✅ mpb crawler completed
+2025-08-18 14:10:45,234 - WARNING - Database connection failed: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-08-18 14:10:45,235 - INFO - Running in file-only mode (data will be saved as JSON/CSV)
+2025-08-18 14:10:45,235 - INFO - Starting data collection...
+2025-08-18 14:10:45,235 - INFO - Running mpb crawler...
+2025-08-18 14:10:45,235 - INFO - Running MPB minutes crawler...
+2025-08-18 14:11:08,815 - INFO - MPB crawler completed successfully
+2025-08-18 14:11:08,815 - INFO - MPB data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/MPB/mpb_crawler/mpb_output.json
+2025-08-18 14:11:08,815 - INFO - mpb crawler completed
+2025-08-18 14:11:08,815 - INFO - Running news crawler...
+2025-08-18 14:11:08,815 - INFO - Running news crawlers...
+2025-08-18 14:11:08,815 - INFO - Running Yonhap News crawler...
+2025-08-18 14:24:27,906 - INFO - Yonhap News crawler completed successfully
+2025-08-18 14:24:27,907 - INFO - Yonhap News data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/yh/yh_crawler/yh_crawler/yh_output.json
+2025-08-18 14:24:27,907 - INFO - Running Edaily crawler...
+2025-08-18 14:34:34,076 - INFO - Edaily crawler completed successfully
+2025-08-18 14:34:34,076 - INFO - Edaily data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/edaily/edaily_crawler/edaily_crawler/edaily_output.json
+2025-08-18 14:34:34,076 - INFO - news crawler completed
+2025-08-18 14:34:34,076 - INFO - Running bond crawler...
+2025-08-18 14:34:34,076 - INFO - Running bond reports crawler...
+2025-08-18 14:34:34,304 - ERROR - Bond crawler failed: Traceback (most recent call last):
+  File "/Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/BOND/bond_crawling.py", line 9, in <module>
+    from PyPDF2 import PdfReader
+ModuleNotFoundError: No module named 'PyPDF2'
+
+2025-08-18 14:34:34,305 - ERROR - Bond crawler stdout: 
+2025-08-18 14:34:34,305 - ERROR - Failed to run bond crawler: Bond crawler process failed: Traceback (most recent call last):
+  File "/Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/BOND/bond_crawling.py", line 9, in <module>
+    from PyPDF2 import PdfReader
+ModuleNotFoundError: No module named 'PyPDF2'
+
+2025-08-18 14:34:34,305 - ERROR - bond crawler failed: Bond crawler process failed: Traceback (most recent call last):
+  File "/Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/BOND/bond_crawling.py", line 9, in <module>
+    from PyPDF2 import PdfReader
+ModuleNotFoundError: No module named 'PyPDF2'
+
+2025-08-18 14:34:34,305 - INFO - Running rates crawler...
+2025-08-18 14:34:34,305 - INFO - Running call rates crawler...
+2025-08-18 14:34:46,070 - INFO - Call rates crawler completed successfully
+2025-08-18 14:34:46,070 - INFO - Call rates data saved to: /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/call_ratings/call_ratings_crawler/call_rates_output.json
+2025-08-18 14:34:46,070 - INFO - rates crawler completed
+2025-08-18 15:47:16,006 - WARNING - Database connection failed: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-08-18 15:47:16,006 - INFO - Running in file-only mode (data will be saved as JSON/CSV)
+2025-08-18 15:47:16,006 - INFO - Starting data collection...
+2025-08-18 15:47:16,006 - INFO - Running mpb crawler...
+2025-08-18 15:47:16,006 - INFO - Running MPB minutes crawler...
