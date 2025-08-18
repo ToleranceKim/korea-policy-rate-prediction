@@ -19,12 +19,13 @@ ADDONS = {}
 #USER_AGENT = "infomax_crawler (+http://www.yourdomain.com)"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
-# Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
+# Concurrency and throttling settings  
+CONCURRENT_REQUESTS = 8
+CONCURRENT_REQUESTS_PER_DOMAIN = 4
+DOWNLOAD_DELAY = 2
+RANDOMIZE_DOWNLOAD_DELAY = 0.5
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False

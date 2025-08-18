@@ -166,7 +166,6 @@ class BatchCollector:
             cmd = [
                 '/opt/anaconda3/envs/ds_env/bin/scrapy', 'crawl', config['spider'],
                 '-o', str(output_file),
-                '-s', 'CLOSESPIDER_PAGECOUNT=10',  # 테스트용 제한
                 '-a', f'start_date={period["start_date"]}',
                 '-a', f'end_date={period["end_date"]}'
             ]
@@ -176,7 +175,7 @@ class BatchCollector:
                 cwd=crawler_dir,
                 capture_output=True, 
                 text=True,
-                timeout=1800  # 30분 타임아웃
+                timeout=3600  # 60분 타임아웃
             )
             
             if result.returncode == 0:
@@ -192,7 +191,7 @@ class BatchCollector:
                 return False
                 
         except subprocess.TimeoutExpired:
-            error_msg = "Collection timeout (30 minutes)"
+            error_msg = "Collection timeout (60 minutes)"
             self.mark_month_failed(crawler_name, period_key, error_msg)
             self.logger.error(f"⏰ {crawler_name} {period_key} timed out")
             return False
@@ -257,12 +256,12 @@ class BatchCollector:
         except:
             return 0
     
-    def run_monthly_collection(self, crawler_names=None, resume_from=None):
+    def run_monthly_collection(self, crawler_names=None, resume_from=None, start_year=2015, end_year=2025, end_month=8):
         """월별 분할 수집 실행"""
         if crawler_names is None:
             crawler_names = list(self.crawlers.keys())
         
-        periods = self.generate_monthly_periods()
+        periods = self.generate_monthly_periods(start_year, end_year, end_month)
         
         # 재시작 지점 찾기
         start_idx = 0

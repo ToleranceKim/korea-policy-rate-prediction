@@ -1,1 +1,16 @@
 2025-08-18 17:27:44,951 - INFO - 🚀 Starting infomax collection for test
+2025-08-18 17:59:54,704 - INFO - 📅 Starting monthly collection for 128 periods
+2025-08-18 17:59:54,704 - INFO - 🎯 Target crawlers: ['yonhap', 'edaily', 'infomax']
+2025-08-18 17:59:54,705 - INFO - 🚀 Starting yonhap collection for 2015-01
+2025-08-18 18:01:21,851 - INFO - ✅ yonhap 2015-01 completed: 3 items
+2025-08-18 18:01:26,856 - INFO - 📊 yonhap progress: 1/128 (0.8%)
+2025-08-18 18:01:26,856 - INFO - 🚀 Starting yonhap collection for 2015-02
+2025-08-18 18:02:56,771 - INFO - ✅ yonhap 2015-02 completed: 2 items
+2025-08-18 18:03:01,775 - INFO - 📊 yonhap progress: 2/128 (1.6%)
+2025-08-18 18:03:01,775 - INFO - 🚀 Starting yonhap collection for 2015-03
+2025-08-18 18:04:29,932 - INFO - ✅ yonhap 2015-03 completed: 3 items
+2025-08-18 18:04:34,933 - INFO - 📊 yonhap progress: 3/128 (2.3%)
+2025-08-18 18:04:34,934 - INFO - 🚀 Starting yonhap collection for 2015-04
+2025-08-18 18:05:57,888 - INFO - ✅ yonhap 2015-04 completed: 3 items
+2025-08-18 18:06:02,894 - INFO - 📊 yonhap progress: 4/128 (3.1%)
+2025-08-18 18:06:02,894 - INFO - 🚀 Starting yonhap collection for 2015-05

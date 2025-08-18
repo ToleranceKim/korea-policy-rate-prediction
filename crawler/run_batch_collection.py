@@ -6,6 +6,7 @@
 import sys
 import argparse
 from pathlib import Path
+import datetime as dt
 
 # scripts/batch 디렉터리를 경로에 추가
 sys.path.append(str(Path(__file__).parent / "scripts" / "batch"))
@@ -14,6 +15,11 @@ from batch_collector import BatchCollector
 from data_merger import DataMerger
 
 def main():
+    # 현재 날짜를 기준으로 기본값 설정
+    now = dt.datetime.now()
+    current_year = now.year
+    current_month = now.month
+    
     parser = argparse.ArgumentParser(description='월별 분할 데이터 수집 시스템')
     parser.add_argument('--crawlers', nargs='+', 
                         choices=['yonhap', 'edaily', 'infomax', 'bond', 'interest_rates', 'call_ratings', 'mpb'],
@@ -24,8 +30,8 @@ def main():
     parser.add_argument('--merge-only', action='store_true', help='수집 없이 병합만 실행')
     parser.add_argument('--status', action='store_true', help='현재 상태만 확인')
     parser.add_argument('--start-year', type=int, default=2015, help='수집 시작 연도 (기본값: 2015)')
-    parser.add_argument('--end-year', type=int, default=2025, help='수집 종료 연도 (기본값: 2025)')
-    parser.add_argument('--end-month', type=int, default=8, help='종료 연도의 마지막 월 (기본값: 8)')
+    parser.add_argument('--end-year', type=int, default=current_year, help=f'수집 종료 연도 (기본값: {current_year})')
+    parser.add_argument('--end-month', type=int, default=current_month, help=f'종료 연도의 마지막 월 (기본값: {current_month})')
     
     args = parser.parse_args()
     
@@ -43,12 +49,13 @@ def main():
     
     print(f"🚀 Starting batch collection...")
     print(f"📋 Target crawlers: {args.crawlers}")
+    print(f"📅 Collection period: {args.start_year}-01 to {args.end_year}-{args.end_month:02d}")
     
     if args.test:
         print("🧪 TEST MODE: Limited collection for validation")
         # 테스트 모드에서는 최근 1개월만 수집
-        from datetime import datetime, timedelta
-        end_date = datetime.now()
+        from datetime import timedelta
+        end_date = dt.datetime.now()
         start_date = end_date - timedelta(days=30)
         
         # 테스트용 수동 수집
@@ -63,7 +70,7 @@ def main():
                 collector.collect_monthly_news(crawler_name, config, test_period)
     else:
         # 전체 월별 수집
-        collector.run_monthly_collection(args.crawlers, args.resume)
+        collector.run_monthly_collection(args.crawlers, args.resume, args.start_year, args.end_year, args.end_month)
     
     # 수집 완료 후 상태 출력
     print("\n" + "="*60)
