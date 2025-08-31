@@ -47,16 +47,20 @@ The project implements multiple specialized crawlers:
   - Targets: www.bok.or.kr policy board minutes (PDF format)
   - Extracts: Discussion content and decision results from PDFs
   - Output: JSON format with structured text data
+  - **Updated**: 30 pages crawling (optimized from 300 pages)
+  - Collection: ~200 documents (2014-2025)
 
-- **News Crawlers**: 
-  - **Yonhap News** (`crawler/yh/`): Jupyter notebook implementation
-  - **Edaily** (`crawler/edaily/`): Jupyter notebook for financial news
-  - **InfoMax** (`crawler/InfoMax/`): Single-day crawler implementation
+- **News Crawlers** (`crawler/core/base_crawler.py`): 
+  - **Yonhap News**: API-based (2016-2025 only), 20s timeout with 3 retries
+  - **Edaily**: Direct site crawling, avg 378 articles/month (high variance)
+  - **InfoMax**: Direct site crawling, most stable source
+  - **Note**: Naver search blocked for Yonhap, use direct methods
 
 - **Bond Reports** (`crawler/BOND/`): Multi-threaded crawler for securities firm reports
   - Targets: finance.naver.com bond analysis reports
-  - Processes: PDF extraction and text cleaning
-  - Period: 2014-2025 (configurable date ranges)
+  - Processes: PDF extraction using PyPDF2 (Tika deprecated)
+  - Period: 2014-08-11 to 2025-08-11
+  - Output: CSV files (~5,900 total reports)
 
 - **Supporting Crawlers**:
   - **Call Rates** (`crawler/call_ratings/`): Interest rate data
@@ -165,7 +169,8 @@ This project uses Korean financial domain-specific NLP:
 ## Development Notes
 
 ### PDF Processing
-- Uses both Tika and PyPDF2 for robust PDF text extraction
+- **Current**: PyPDF2 for PDF text extraction (Tika deprecated due to Java dependency)
+- **Bond Crawler**: Kospacing disabled (commented out) for text spacing
 - Special handling for Korean text in financial documents
 - Error handling for corrupted or complex PDF layouts
 

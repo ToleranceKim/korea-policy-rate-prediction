@@ -1,1 +1,0 @@
-# Edaily news crawler package

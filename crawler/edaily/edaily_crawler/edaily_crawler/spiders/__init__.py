@@ -1,1 +1,0 @@
-# Edaily spiders package

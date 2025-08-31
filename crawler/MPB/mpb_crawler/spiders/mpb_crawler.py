@@ -1,5 +1,5 @@
 import scrapy
-from tika import parser
+import PyPDF2
 from io import BytesIO
 import os
 import time
@@ -26,7 +26,8 @@ class MpbCrawlerSpider(scrapy.Spider):
             'depth4': 200789,
         }
 
-        for page_index in range(1, 31): # 2014~2025년 약 100차례 회의록 수집
+        # 작년 사양대로 30페이지만 수집 (2014~2025년 약 200건)
+        for page_index in range(1, 31):
             params['pageIndex'] = page_index
             url = f"{base_url}?{'&'.join([f'{key}={value}' for key, value in params.items()])}"
             yield scrapy.Request(url=url, callback=self.parse)
@@ -58,9 +59,15 @@ class MpbCrawlerSpider(scrapy.Spider):
 
     def parse_pdf(self, response):
         try:
-            parsed = parser.from_buffer(response.body)
-            text = parsed["content"]
-            # 제목에서 날짜 추출 (기존 코드와 동일)
+            # PyPDF2로 PDF 텍스트 추출
+            pdf_file = BytesIO(response.body)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+            
+            # 제목에서 날짜 추출
             date_matches = re.findall(r'(\d{4}\.\d{1,2}\.\d{1,2})', response.meta['title'])
             date = date_matches[0] if date_matches else None
             title = response.meta['title']
@@ -75,7 +82,7 @@ class MpbCrawlerSpider(scrapy.Spider):
             decision_content = re.search(decision_pattern, text, re.DOTALL)
             decision_text = decision_content.group(1).strip().replace('\n', '') if decision_content else None
 
-            if text:
+            if text.strip():
                 yield {
                     'date': date,
                     'title': title,
@@ -84,8 +91,19 @@ class MpbCrawlerSpider(scrapy.Spider):
                     'decision': decision_text,
                     'link': response.url
                 }
+                self.logger.info(f"Successfully processed PDF: {title}")
             else:
-                print("pdf 파일을 읽을 수 없습니다")
+                self.logger.warning(f"Empty PDF content for: {title}")
     
         except Exception as e:
-            print(f"Error parsing PDF: {e}")
+            self.logger.error(f"Error parsing PDF {response.url}: {e}")
+            # Fallback: 빈 컨텐츠로라도 메타데이터 수집
+            yield {
+                'date': None,
+                'title': response.meta.get('title', 'Unknown'),
+                'content': None,
+                'discussion': None,
+                'decision': None,
+                'link': response.url,
+                'error': str(e)
+            }
