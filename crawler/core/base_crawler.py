@@ -51,10 +51,10 @@ class UnifiedNewsCrawler:
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')
         end_dt = datetime.strptime(end_date, '%Y-%m-%d')
         
-        # 2016년 이전은 수집 불가
+        # 2016년 이전은 네이버 뉴스 검색 사용
         if start_dt.year < 2016:
-            logger.warning(f"연합뉴스 {start_dt.year}년 데이터는 API에서 제공하지 않습니다 (2016년부터 가능)")
-            return []
+            logger.info(f"연합뉴스 {start_dt.year}년 데이터 - 네이버 뉴스 검색 사용")
+            return self.crawl_yonhap_direct(start_date, end_date)
         
         logger.info(f"연합뉴스 API 크롤링: {start_date} ~ {end_date}")
         
@@ -276,7 +276,7 @@ class UnifiedNewsCrawler:
             
             return {
                 'title': title,
-                'content': content[:3000],
+                'content': content,  # 전체 본문 수집
                 'date': date,
                 'url': url,
                 'source': 'yonhap',
@@ -294,8 +294,47 @@ class UnifiedNewsCrawler:
             logger.error(f"연합뉴스 기사 추출 오류 ({url}): {e}")
             return None
     
+    def extract_naver_news_article(self, url: str) -> Optional[Dict]:
+        """네이버 뉴스 기사 추출"""
+        try:
+            response = self.session.get(url, timeout=10)
+            if response.status_code != 200:
+                return None
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 제목
+            title = None
+            title_elem = soup.select_one('h2.media_end_head_headline')
+            if title_elem:
+                title = title_elem.text.strip()
+            
+            # 본문
+            content = ""
+            content_elem = soup.select_one('article#dic_area')
+            if content_elem:
+                # 불필요한 요소 제거
+                for elem in content_elem.select('div.vod_player_wrap, span.end_photo_org'):
+                    elem.decompose()
+                content = content_elem.text.strip()
+            
+            if not content:
+                # 구형 레이아웃
+                content_elem = soup.select_one('div#articleBodyContents')
+                if content_elem:
+                    content = content_elem.text.strip()
+            
+            return {
+                'title': title,
+                'content': content
+            } if content else None
+            
+        except Exception as e:
+            logger.error(f"네이버 뉴스 추출 오류: {e}")
+            return None
+    
     def crawl_yonhap_direct(self, start_date: str, end_date: str) -> List[Dict]:
-        """연합뉴스 직접 검색 (2014년용)"""
+        """연합뉴스 직접 검색 (2014년용) - 연합뉴스 사이트 직접 크롤링"""
         articles = []
         
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')
@@ -303,26 +342,119 @@ class UnifiedNewsCrawler:
         
         logger.info(f"연합뉴스 직접 검색: {start_date} ~ {end_date}")
         
-        # 네이버 대신 다른 소스 사용
-        # 1. 구글 검색 활용
-        for page in range(1, 6):  # 구글은 5페이지로 제한
-            try:
-                # 구글 검색으로 연합뉴스 기사 찾기
-                search_query = f'site:yna.co.kr OR site:yonhapnews.co.kr {self.keyword}'
-                date_range = f' after:{start_date} before:{end_date}'
+        # 2014년도 API 시도 (실패할 가능성 높지만 시도)
+        current_date = start_dt
+        total_articles = 0
+        
+        while current_date <= end_dt:
+            date_str = current_date.strftime('%Y%m%d')
+            daily_articles = []
+            
+            # 페이지네이션 처리
+            page_no = 1
+            
+            while True:  # 페이지 제한 없음
+                # 연합뉴스 API URL (2014년도 시도)
+                url = 'http://ars.yna.co.kr/api/v2/search.asis'
                 
-                # 네이버 대신 연합뉴스 아카이브 사용
-                # 2014년 데이터는 제한적이므로 이데일리로 보완 권장
-                logger.info(f"  페이지 {page}: 2014년 연합뉴스는 제한적")
+                params = {
+                    'callback': 'Search.SearchPreCallback',
+                    'query': self.keyword,
+                    'page_no': str(page_no),
+                    'period': 'diy',
+                    'from': date_str,
+                    'to': date_str,
+                    'ctype': 'A',
+                    'page_size': '50',
+                    'channel': 'basic_kr'
+                }
                 
-                # 여기서는 빈 리스트 반환 (실제로는 빅카인즈 등 활용 필요)
-                if page == 1:
-                    logger.warning("2014년 연합뉴스 데이터는 빅카인즈(www.bigkinds.or.kr) 사용 권장")
-                break
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': 'https://www.yna.co.kr/'
+                }
                 
-            except Exception as e:
-                logger.error(f"직접 검색 오류: {e}")
-                break
+                try:
+                    response = requests.get(url, params=params, headers=headers, timeout=20)
+                    
+                    if 'Search.SearchPreCallback' in response.text:
+                        # JSONP 콜백 제거 및 JSON 파싱
+                        import re
+                        json_str = re.search(r'Search\.SearchPreCallback\((.*)\)', response.text)
+                        if json_str:
+                            data = json.loads(json_str.group(1))
+                            results = data.get('KR_ARTICLE', {}).get('result', [])
+                            
+                            # 결과가 없으면 다음 날짜로
+                            if not results:
+                                break
+                            
+                            page_articles = []
+                            for item in results:
+                                # 날짜 확인
+                                article_date = item.get('DIST_DATE', '')
+                                if article_date.startswith(date_str[:8]):
+                                    # URL 생성
+                                    article_id = item.get('CONTENTS_ID', '')
+                                    article_url = f"https://www.yna.co.kr/view/{article_id}" if article_id else ''
+                                    
+                                    # 본문
+                                    content = item.get('TEXT_BODY', item.get('CONTENTS', ''))
+                                    
+                                    article = {
+                                        'title': item.get('TITLE', ''),
+                                        'content': content,
+                                        'date': f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}",
+                                        'url': article_url,
+                                        'source': 'yonhap',
+                                        'keyword': self.keyword,
+                                        'content_length': len(content)
+                                    }
+                                    
+                                    # API가 본문을 제공하지 않거나 너무 짧은 경우
+                                    if (not article['content'] or article['content_length'] < 200) and article['url']:
+                                        logger.debug(f"    콘텐츠 부족, URL 방문: {article['url']}")
+                                        full_article = self.extract_yonhap_article(article['url'])
+                                        if full_article and full_article.get('content'):
+                                            article['content'] = full_article['content']
+                                            article['content_length'] = len(full_article['content'])
+                                    
+                                    page_articles.append(article)
+                            
+                            daily_articles.extend(page_articles)
+                            
+                            # 이 페이지에서 날짜가 맞는 기사가 하나도 없으면 종료
+                            if len(page_articles) == 0 and page_no > 1:
+                                break
+                            
+                            # 결과가 없으면 마지막 페이지로 간주
+                            if len(results) == 0:
+                                break
+                            
+                            page_no += 1
+                            time.sleep(0.3)
+                    else:
+                        # API 응답이 없으면 다음 날짜로
+                        break
+                    
+                except Exception as e:
+                    logger.debug(f"연합뉴스 API 오류 ({date_str}, 페이지 {page_no}): {e}")
+                    break
+            
+            # 하루 수집 결과 정리
+            if daily_articles:
+                articles.extend(daily_articles)
+                logger.info(f"  {current_date.strftime('%Y-%m-%d')}: {len(daily_articles)}개 수집")
+                total_articles += len(daily_articles)
+            
+            time.sleep(0.5)
+            current_date += timedelta(days=1)
+        
+        # API 결과가 없으면 경고
+        if total_articles == 0:
+            logger.warning(f"연합뉴스 2014년 데이터 수집 실패 - 빅카인즈(www.bigkinds.or.kr) 사용 권장")
+        else:
+            logger.info(f"연합뉴스 총 {total_articles}개 기사 수집 완료")
         
         return articles
     
@@ -377,6 +509,10 @@ class UnifiedNewsCrawler:
                     logger.info(f"  페이지 {page_number}: 결과 없음")
                     if empty_page_count >= 3:
                         logger.info("  3페이지 연속 결과 없음, 종료")
+                        last_page = page_number - 3
+                        last_url = base_url + str(last_page)
+                        logger.info(f"  수집 종료 - 마지막 페이지: {last_page}")
+                        logger.info(f"  마지막 페이지 링크: {last_url}")
                         break
                 else:
                     empty_page_count = 0
@@ -409,12 +545,21 @@ class UnifiedNewsCrawler:
                                 
                                 # 날짜 범위 확인
                                 if start_dt.date() <= date_obj.date() <= end_dt.date():
+                                    # URL에서 전체 기사 내용 가져오기
+                                    full_content = content  # 기본값은 미리보기
+                                    if url:
+                                        full_article = self.extract_edaily_article(url)
+                                        if full_article and full_article.get('content'):
+                                            full_content = full_article['content']
+                                            logger.debug(f"    본문 수집: {len(full_content)}자")
+                                    
                                     article = {
                                         'date': date_str,
                                         'title': title,
-                                        'content': content,
+                                        'content': full_content,  # 전체 본문
                                         'url': url,
-                                        'source': 'edaily'
+                                        'source': 'edaily',
+                                        'content_length': len(full_content)
                                     }
                                     articles.append(article)
                                     logger.info(f"    ✓ {title[:50]}...")
@@ -442,13 +587,52 @@ class UnifiedNewsCrawler:
                 break
         
         logger.info(f"이데일리 크롤링 완료: 총 {len(articles)}개 기사 수집")
+        if page_number > 1:
+            logger.info(f"  검증용 링크 - 1페이지: {base_url}1")
+            logger.info(f"  검증용 링크 - 마지막 확인 페이지: {base_url}{page_number}")
         return articles
+    
+    def extract_edaily_article(self, url: str) -> Optional[Dict]:
+        """이데일리 기사 전체 본문 추출 - 작년 검증된 코드 기반"""
+        try:
+            response = self.session.get(url, timeout=10)
+            if response.status_code != 200:
+                return None
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 본문 추출 (작년 코드 기반)
+            content = ""
+            content_selectors = [
+                'div.news_body',      # 메인 본문 컨테이너
+                'div.article_body',   # 대체 본문 컨테이너
+                'div#newsContent',    # 구형 페이지
+                'article'             # 최신 HTML5 구조
+            ]
+            
+            for selector in content_selectors:
+                elem = soup.select_one(selector)
+                if elem:
+                    # 텍스트만 추출 (작년 로직과 동일)
+                    texts = elem.find_all(text=True, recursive=True)
+                    content = ' '.join([t.strip() for t in texts if t.strip()])
+                    if content:  # 내용이 있으면 사용
+                        break
+            
+            return {
+                'content': content if content else None
+            }
+            
+        except Exception as e:
+            logger.error(f"이데일리 기사 추출 오류 ({url}): {e}")
+            return None
     
     def crawl_infomax(self, start_date: str, end_date: str) -> List[Dict]:
         """인포맥스 크롤링 (직접 사이트) - 개선된 버전"""
         articles = []
         collected_titles = set()  # 제목 기반 중복 제거 추가
         collected_urls = set()  # URL 기반 중복 제거 (함수 레벨로 이동)
+        total_duplicates = 0  # 전체 중복 카운트
         
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')
         end_dt = datetime.strptime(end_date, '%Y-%m-%d')
@@ -528,6 +712,10 @@ class UnifiedNewsCrawler:
                         logger.info(f"  페이지 {page}: 결과 없음")
                         if consecutive_empty >= 5:  # 연속 5페이지 빈 경우 종료 (더 관대하게)
                             logger.info("  연속 5페이지 빈 결과, 크롤링 종료")
+                            last_page = page - 5
+                            base_search_url = f'https://news.einfomax.co.kr/news/articleList.html?page={last_page}&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=&sc_level=&sc_article_type=&sc_view_level=&sc_sdate={start_str}&sc_edate={end_str}&sc_serial_number=&sc_word={quote(self.keyword)}'
+                            logger.info(f"  수집 종료 - 마지막 페이지: {last_page}")
+                            logger.info(f"  마지막 페이지 링크: {base_search_url}")
                             break
                     else:
                         consecutive_empty = 0  # 리셋
@@ -566,6 +754,7 @@ class UnifiedNewsCrawler:
                                         page_articles_count += 1
                             else:
                                 duplicate_count += 1
+                                total_duplicates += 1
                     
                     # 해당 페이지 처리 결과 상세 로깅
                     if page_articles_count > 0 or duplicate_count > 0 or date_filtered_count > 0:
@@ -586,6 +775,13 @@ class UnifiedNewsCrawler:
                 logger.error(f"인포맥스 검색 오류: {e}")
                 break
         
+        logger.info(f"인포맥스 크롤링 완료: 총 {len(articles)}개 기사 수집 (중복 {total_duplicates}개 제외)")
+        if page > 1:
+            first_url = f'https://news.einfomax.co.kr/news/articleList.html?page=1&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=&sc_level=&sc_article_type=&sc_view_level=&sc_sdate={start_str}&sc_edate={end_str}&sc_serial_number=&sc_word={quote(self.keyword)}'
+            last_url = f'https://news.einfomax.co.kr/news/articleList.html?page={page}&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=&sc_level=&sc_article_type=&sc_view_level=&sc_sdate={start_str}&sc_edate={end_str}&sc_serial_number=&sc_word={quote(self.keyword)}'
+            logger.info(f"  검증용 링크 - 1페이지: {first_url}")
+            logger.info(f"  검증용 링크 - 마지막 확인 페이지: {last_url}")
+            logger.info(f"  실제 발견 기사: {len(articles) + total_duplicates}개 (수집 {len(articles)}개 + 중복 {total_duplicates}개)")
         return articles
     
     def extract_infomax_article(self, url: str, session=None) -> Optional[Dict]:
@@ -629,7 +825,7 @@ class UnifiedNewsCrawler:
             
             return {
                 'title': title,
-                'content': content[:3000],
+                'content': content,  # 전체 본문 수집
                 'date': date,
                 'url': url,
                 'source': 'infomax',
