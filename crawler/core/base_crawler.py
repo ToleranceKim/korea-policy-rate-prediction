@@ -68,7 +68,7 @@ class UnifiedNewsCrawler:
             
             # 페이지네이션 처리 (각 날짜별로 모든 페이지 순회)
             page_no = 1
-            max_pages = 10  # 최대 10페이지까지 확인 (500개)
+            max_pages = 100  # 최대 100페이지까지 확인 (5000개)
             
             while page_no <= max_pages:
                 # 연합뉴스 API URL
@@ -106,34 +106,51 @@ class UnifiedNewsCrawler:
                             if not results:
                                 break
                             
-                            page_count = 0
+                            page_articles = []
                             for item in results:
                                 # 날짜 확인 (API가 정확한 날짜를 반환하는지 체크)
                                 article_date = item.get('DIST_DATE', '')
                                 if article_date.startswith(date_str[:8]):
+                                    # URL 생성 (CONTENTS_ID 사용)
+                                    article_id = item.get('CONTENTS_ID', '')
+                                    article_url = f"https://www.yna.co.kr/view/{article_id}" if article_id else ''
+                                    
+                                    # 본문은 TEXT_BODY 사용
+                                    content = item.get('TEXT_BODY', item.get('CONTENTS', ''))
+                                    
                                     article = {
                                         'title': item.get('TITLE', ''),
-                                        'content': item.get('CONTENTS', ''),
+                                        'content': content,
                                         'date': f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}",
-                                        'url': item.get('WURL', ''),
+                                        'url': article_url,
                                         'source': 'yonhap',
                                         'keyword': self.keyword,
-                                        'content_length': len(item.get('CONTENTS', ''))
+                                        'content_length': len(content)
                                     }
                                     
-                                    # 본문이 너무 짧은 경우 기사 페이지 직접 방문
-                                    if article['content_length'] < 200 and article['url']:
+                                    # API가 본문을 제공하지 않거나 너무 짧은 경우 기사 페이지 직접 방문
+                                    if (not article['content'] or article['content_length'] < 200) and article['url']:
+                                        logger.debug(f"    콘텐츠 부족, URL 방문: {article['url']}")
                                         full_article = self.extract_yonhap_article(article['url'])
                                         if full_article and full_article.get('content'):
                                             article['content'] = full_article['content']
                                             article['content_length'] = len(full_article['content'])
+                                            logger.debug(f"    콘텐츠 수집 성공: {len(full_article['content'])}자")
+                                        else:
+                                            logger.warning(f"    콘텐츠 수집 실패: {article['url']}")
                                     
-                                    daily_articles.append(article)
-                                    page_count += 1
+                                    page_articles.append(article)
                             
-                            # 결과가 없거나 10개 미만이면 마지막 페이지로 간주
-                            # (API가 페이지당 최대 10개 반환)
-                            if len(results) < 10:
+                            # 이 페이지에서 수집한 기사를 전체 목록에 추가
+                            daily_articles.extend(page_articles)
+                            
+                            # 이 페이지에서 날짜가 맞는 기사가 하나도 없으면 종료
+                            # (API가 날짜순으로 정렬되어 있다고 가정)
+                            if len(page_articles) == 0 and page_no > 1:
+                                break
+                            
+                            # 결과가 없으면 마지막 페이지로 간주
+                            if len(results) == 0:
                                 break
                             
                             page_no += 1
@@ -253,9 +270,7 @@ class UnifiedNewsCrawler:
                     if len(content) > 100:
                         break
             
-            # 키워드 확인
-            if self.keyword not in title and self.keyword not in content:
-                return None
+            # 키워드 확인 제거 - API 검색 결과에 이미 포함된 기사
             
             # 날짜 추출
             date = self.extract_date(soup, url)
@@ -437,6 +452,7 @@ class UnifiedNewsCrawler:
         """인포맥스 크롤링 (직접 사이트) - 개선된 버전"""
         articles = []
         collected_titles = set()  # 제목 기반 중복 제거 추가
+        collected_urls = set()  # URL 기반 중복 제거 (함수 레벨로 이동)
         
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')
         end_dt = datetime.strptime(end_date, '%Y-%m-%d')
@@ -448,8 +464,10 @@ class UnifiedNewsCrawler:
         end_str = end_dt.strftime('%Y%m%d')
         
         page = 1
-        empty_page_count = 0  # 안전장치
-        while empty_page_count < 3:  # 연속 3페이지 빈 경우 종료
+        max_pages = 50  # 최대 50페이지까지 확인
+        consecutive_empty = 0  # 연속 빈 페이지 카운터
+        
+        while page <= max_pages:
             url = "https://news.einfomax.co.kr/news/articleList.html"
             params = {
                 'sc_word': self.keyword,
@@ -474,17 +492,18 @@ class UnifiedNewsCrawler:
                                 href = urljoin('https://news.einfomax.co.kr', href)
                             
                             url_hash = hashlib.md5(href.encode()).hexdigest()
-                            if url_hash not in self.collected_urls:
-                                self.collected_urls.add(url_hash)
+                            if url_hash not in collected_urls:
+                                collected_urls.add(url_hash)
                                 article_links.append(href)
                     
                     if not article_links:
-                        empty_page_count += 1
-                        logger.info(f"  페이지 {page}: 더 이상 결과 없음")
-                        if empty_page_count >= 3:
+                        consecutive_empty += 1
+                        logger.info(f"  페이지 {page}: 결과 없음")
+                        if consecutive_empty >= 3:  # 연속 3페이지 빈 경우 종료
+                            logger.info("  연속 3페이지 빈 결과, 크롤링 종료")
                             break
                     else:
-                        empty_page_count = 0  # 리셋
+                        consecutive_empty = 0  # 리셋
                         logger.info(f"  페이지 {page}: {len(article_links)}개 발견")
                     
                     # 각 링크에서 기사 추출 (page 증가 전에 처리)
@@ -566,9 +585,7 @@ class UnifiedNewsCrawler:
             texts = content_elem.find_all(text=True, recursive=True)
             content = ' '.join([t.strip() for t in texts if t.strip()])
             
-            # 키워드 확인
-            if self.keyword not in title and self.keyword not in content:
-                return None
+            # 키워드 확인 제거 - 이미 검색 결과에 포함된 기사들
             
             # 날짜 추출 - 두 번째 li 요소에 날짜 있음
             date = None
