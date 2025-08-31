@@ -68,9 +68,8 @@ class UnifiedNewsCrawler:
             
             # 페이지네이션 처리 (각 날짜별로 모든 페이지 순회)
             page_no = 1
-            max_pages = 100  # 최대 100페이지까지 확인 (5000개)
             
-            while page_no <= max_pages:
+            while True:  # 페이지 제한 없음
                 # 연합뉴스 API URL
                 url = 'http://ars.yna.co.kr/api/v2/search.asis'
                 
@@ -346,10 +345,7 @@ class UnifiedNewsCrawler:
         empty_page_count = 0
         
         while True:
-            # 페이지 제한 (너무 많은 페이지 방지)
-            if page_number > 100:  # 최대 100페이지
-                logger.info(f"최대 페이지(100) 도달")
-                break
+            # 페이지 제한 없음 - 빈 페이지가 연속으로 나올 때까지 계속
                 
             current_url = base_url + str(page_number)
             
@@ -459,15 +455,29 @@ class UnifiedNewsCrawler:
         
         logger.info(f"인포맥스 검색: {start_date} ~ {end_date}")
         
+        # 새로운 세션 생성하여 캐시 문제 방지
+        import requests
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+        })
+        
+        # 인포맥스 메인 페이지 방문 (세션 초기화)
+        session.get('https://news.einfomax.co.kr')
+        time.sleep(0.5)
+        
         # 날짜별이 아닌 전체 기간 검색으로 변경
         start_str = start_dt.strftime('%Y%m%d')
         end_str = end_dt.strftime('%Y%m%d')
         
         page = 1
-        max_pages = 50  # 최대 50페이지까지 확인
         consecutive_empty = 0  # 연속 빈 페이지 카운터
         
-        while page <= max_pages:
+        while True:  # 페이지 제한 없음
             url = "https://news.einfomax.co.kr/news/articleList.html"
             params = {
                 'sc_word': self.keyword,
@@ -478,29 +488,46 @@ class UnifiedNewsCrawler:
             }
             
             try:
-                response = self.session.get(url, params=params, timeout=10)
+                # 각 페이지마다 Referer 헤더 추가
+                headers = {
+                    'Referer': f'https://news.einfomax.co.kr/news/articleList.html?page={page-1}' if page > 1 else 'https://news.einfomax.co.kr'
+                }
+                response = session.get(url, params=params, headers=headers, timeout=10)
                 
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     
                     # 기사 링크 찾기 - 개선된 방식
                     article_links = []
+                    seen_ids = set()  # 이 페이지에서 본 기사 ID
+                    
                     for a in soup.find_all('a', href=True):
                         href = a.get('href', '')
-                        if '/articleView.html' in href:
-                            if not href.startswith('http'):
-                                href = urljoin('https://news.einfomax.co.kr', href)
-                            
-                            url_hash = hashlib.md5(href.encode()).hexdigest()
-                            if url_hash not in collected_urls:
-                                collected_urls.add(url_hash)
-                                article_links.append(href)
+                        # 더 정확한 패턴 매칭
+                        if '/articleView.html?idxno=' in href:
+                            # 기사 ID 추출
+                            try:
+                                article_id = href.split('idxno=')[1].split('&')[0]
+                                
+                                # 이 페이지에서 중복 제거
+                                if article_id not in seen_ids:
+                                    seen_ids.add(article_id)
+                                    
+                                    if not href.startswith('http'):
+                                        href = urljoin('https://news.einfomax.co.kr', href)
+                                    
+                                    url_hash = hashlib.md5(href.encode()).hexdigest()
+                                    if url_hash not in collected_urls:
+                                        collected_urls.add(url_hash)
+                                        article_links.append(href)
+                            except:
+                                pass
                     
                     if not article_links:
                         consecutive_empty += 1
                         logger.info(f"  페이지 {page}: 결과 없음")
-                        if consecutive_empty >= 3:  # 연속 3페이지 빈 경우 종료
-                            logger.info("  연속 3페이지 빈 결과, 크롤링 종료")
+                        if consecutive_empty >= 5:  # 연속 5페이지 빈 경우 종료 (더 관대하게)
+                            logger.info("  연속 5페이지 빈 결과, 크롤링 종료")
                             break
                     else:
                         consecutive_empty = 0  # 리셋
@@ -512,7 +539,7 @@ class UnifiedNewsCrawler:
                     date_filtered_count = 0
                     
                     for link in article_links:
-                        article = self.extract_infomax_article(link)
+                        article = self.extract_infomax_article(link, session=session)
                         if article:
                             # 제목 기반 중복 체크 추가
                             title_hash = hashlib.md5(article['title'].encode()).hexdigest()
@@ -561,10 +588,13 @@ class UnifiedNewsCrawler:
         
         return articles
     
-    def extract_infomax_article(self, url: str) -> Optional[Dict]:
+    def extract_infomax_article(self, url: str, session=None) -> Optional[Dict]:
         """인포맥스 기사 추출"""
         try:
-            response = self.session.get(url, timeout=10)
+            # 세션이 제공되지 않으면 기본 세션 사용
+            if session is None:
+                session = self.session
+            response = session.get(url, timeout=10)
             
             if response.status_code != 200:
                 return None
