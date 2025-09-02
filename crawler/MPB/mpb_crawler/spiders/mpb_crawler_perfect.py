@@ -75,17 +75,12 @@ class MpbCrawlerPerfectSpider(scrapy.Spider):
         
         # 동적 페이지 수 설정 또는 충분히 큰 기본값 사용
         if last_page:
-            self.total_pages = min(last_page, 200)  # 최대 200페이지로 제한
-            self.logger.info(f"🎯 동적으로 감지된 전체 페이지 수: {self.total_pages}개")
+            self.total_pages = min(last_page, 1000)  # 충분한 페이지 허용 (최대 1000페이지)
+            self.logger.info(f"동적으로 감지된 전체 페이지 수: {self.total_pages}개")
         else:
-            # 기본값: 충분히 크게 설정
-            if self.start_year >= 2024:
-                self.total_pages = 50  # 500건
-            elif self.start_year >= 2020:
-                self.total_pages = 100  # 1000건
-            else:
-                self.total_pages = 150  # 1500건
-            self.logger.info(f"🎯 기본 페이지 수 사용: {self.total_pages}개")
+            # 기본값: 모든 연도에 대해 충분한 페이지 설정
+            self.total_pages = 500  # 5000건까지 수집 가능
+            self.logger.info(f"기본 페이지 수 사용: {self.total_pages}개")
         
         self.logger.info(f"🎯 크롤링할 전체 페이지 수: {self.total_pages:,}개")
         
@@ -115,12 +110,26 @@ class MpbCrawlerPerfectSpider(scrapy.Spider):
         if self.current_page % 100 == 0:
             self.logger.info(f"📊 진행 중: {self.current_page:,}/{self.total_pages:,} 페이지 처리 중...")
         
-        # 게시물 목록 찾기
+        # 게시물 목록 찾기 - 다양한 셀렉터 시도
         items = response.css('li.bbsRowCls')
         if not items:
             items = response.css('tr.board_list_tr')
         if not items:
             items = response.xpath('//tbody/tr[not(@class="notice")]')
+        if not items:
+            # 추가 셀렉터 패턴
+            items = response.css('div.board_list ul li')
+        if not items:
+            items = response.css('table.boardList tbody tr')
+        
+        # 빈 페이지 감지
+        if not items:
+            self.logger.warning(f"⚠️ 페이지 {self.current_page}에 데이터가 없습니다 - 실제로 데이터가 없을 수 있음")
+            # 연속 빈 페이지가 10개 이상이면 크롤링 종료
+            self.empty_page_count += 1
+            if self.empty_page_count >= 10:
+                self.logger.info(f"📌 연속 10페이지가 비어있어 크롤링 종료")
+                return
         
         page_item_count = 0
         
@@ -344,4 +353,20 @@ class MpbCrawlerPerfectSpider(scrapy.Spider):
         self.logger.info(f"요청한 기간: {self.start_year}년 ~ {self.end_year}년")
         self.logger.info(f"크롤링한 페이지: {self.current_page:,}/{self.total_pages:,}")
         self.logger.info(f"수집된 의사록: {self.total_items:,}개")
+        
+        # 수집 품질 검증
+        expected_yearly = 24  # 연간 예상 의사록 수
+        years = self.end_year - self.start_year + 1
+        expected_total = years * expected_yearly
+        collection_rate = (self.total_items / expected_total * 100) if expected_total > 0 else 0
+        
+        self.logger.info(f"예상 의사록 수: 약 {expected_total}개 (연간 {expected_yearly}개 기준)")
+        self.logger.info(f"수집률: {collection_rate:.1f}%")
+        
+        if collection_rate < 70:
+            self.logger.warning("⚠️ 수집률이 70% 미만입니다. 다음을 확인하세요:")
+            self.logger.warning("  1. 한국은행 사이트 구조 변경")
+            self.logger.warning("  2. 실제로 일부 의사록이 미공개")
+            self.logger.warning("  3. 페이지네이션 로직 문제")
+        
         self.logger.info("="*60)

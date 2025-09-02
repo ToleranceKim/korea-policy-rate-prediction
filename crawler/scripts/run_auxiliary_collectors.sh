@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# 자동 데이터 수집 스크립트
-# MPB 의사록과 채권 리포트를 병렬로 수집
+# 보조 데이터 수집 스크립트
+# MPB 의사록, 금리 데이터, 채권 리포트 수집
 
 echo "=========================================="
-echo "데이터 수집 시작: $(date)"
+echo "보조 데이터 수집 시작: $(date)"
 echo "=========================================="
 
-# 환경 설정
+# 환경 설정 (프로젝트 루트 기준)
 cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining
 source /opt/anaconda3/etc/profile.d/conda.sh
 conda activate ds_env
@@ -19,9 +19,9 @@ cd crawler/MPB
 nohup /opt/anaconda3/envs/ds_env/bin/scrapy crawl mpb_crawler_perfect \
     -a start_year=2014 \
     -a end_year=2025 \
-    -o ../../data/mpb_complete_$(date +%Y%m%d).json \
+    -o ../../data/mpb_complete.json \
     -s LOG_LEVEL=INFO \
-    -s CLOSESPIDER_PAGECOUNT=200 > mpb_collection.log 2>&1 &
+    > mpb_collection.log 2>&1 &
 MPB_PID=$!
 echo "MPB 크롤러 실행 중 (PID: $MPB_PID)"
 
@@ -29,10 +29,8 @@ echo "MPB 크롤러 실행 중 (PID: $MPB_PID)"
 echo ""
 echo "[2/3] 기준금리 데이터 수집..."
 cd ../interest_rates
-/opt/anaconda3/envs/ds_env/bin/scrapy crawl interest_rates_complete \
-    -a start_year=2014 \
-    -a end_year=2025 \
-    -o ../../data/interest_rates_complete_$(date +%Y%m%d).json \
+/opt/anaconda3/envs/ds_env/bin/scrapy crawl interest_rates \
+    -o ../../data/interest_rates_complete.json \
     -s LOG_LEVEL=INFO
 
 # 3. 채권 리포트 수집 (월별 병렬)
@@ -69,31 +67,32 @@ collect_bonds_for_year() {
         end_date="${year}-${month_str}-${last_day}"
         
         echo "    수집 중: ${start_date} ~ ${end_date}"
-        /opt/anaconda3/envs/ds_env/bin/python bond_parallel_crawler.py $start_date $end_date 5
+        # 개선된 크롤러 사용
+        /opt/anaconda3/envs/ds_env/bin/python bond_crawler_improved.py $start_date $end_date
         
         # 서버 부하 방지를 위한 대기
         sleep 10
     done
 }
 
-# 2024년부터 시작 (테스트)
-for year in 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014; do
+# 2014년부터 2025년까지 순차적으로 처리
+for year in 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025; do
     collect_bonds_for_year $year &
     
-    # 동시에 3개 연도까지만 처리
-    while [ $(jobs -r | wc -l) -ge 3 ]; do
+    # 동시에 2개 연도까지만 처리 (안정성 향상)
+    while [ $(jobs -r | wc -l) -ge 2 ]; do
         sleep 30
     done
 done
 
 # 모든 백그라운드 작업 완료 대기
 echo ""
-echo "모든 수집 작업 완료 대기 중..."
+echo "모든 보조 데이터 수집 작업 완료 대기 중..."
 wait
 
 echo ""
 echo "=========================================="
-echo "데이터 수집 완료: $(date)"
+echo "보조 데이터 수집 완료: $(date)"
 echo "=========================================="
 
 # 수집 결과 확인
@@ -102,9 +101,15 @@ echo "수집 결과:"
 echo "----------"
 
 # MPB 의사록 개수
-if [ -f "../../data/mpb_complete_$(date +%Y%m%d).json" ]; then
-    mpb_count=$(cat ../../data/mpb_complete_$(date +%Y%m%d).json | grep -c '"title"')
+if [ -f "../../data/mpb_complete.json" ]; then
+    mpb_count=$(cat ../../data/mpb_complete.json | grep -c '"title"')
     echo "MPB 의사록: ${mpb_count}개"
+fi
+
+# 금리 데이터 개수
+if [ -f "../../data/interest_rates_complete.json" ]; then
+    rate_count=$(cat ../../data/interest_rates_complete.json | grep -c '"날짜"')
+    echo "금리 데이터: ${rate_count}개"
 fi
 
 # 채권 리포트 개수
