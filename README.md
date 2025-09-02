@@ -11,53 +11,44 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 <br/>
 
 ## 3. 프로젝트 기간
-2024년 8월 8일 - 2024년 8월 28일
+- **1차 개발**: 2024년 8월 8일 - 2024년 8월 28일 (논문 구현)
+- **2차 개발**: 2025년 7월 - 현재 (시스템 안정화 및 개선)
 
 
 <br/>
 
 
-## 4. 프로젝트 진행
-✔ <b>데이터 수집</b>
-<ul>
-<li>연합뉴스, 연합인포맥스, 이데일리</li>
-<li>채권 분석 보고서</li>
-<li>금융통화위원회 의사록</li>
-<li>콜 금리</li>
-</ul>
+## 4. 개발 현황
 
-<br/>
+### **완료된 작업** (1차)
+- 기본 크롤링 시스템 구축
+- 데이터 전처리 파이프라인 (eKoNLPy 기반)
+- 기본 모델링 프레임워크 (NBC, Deep Learning)
+- n-gram 기반 감성 분석 시스템
 
-✔ <b>데이터 전처리  </b>
-<ul>
-<li>토큰화 : 긴 문자열의 텍스트를 토큰(단어)로 분할 / 품사(POS)태깅</li>
-<li>정규화 : 텍스트를 하나의 표준 형식으로 변환(구두점 제거, 마침표 제거, 숫자를 해당 단어로 변환, 어간, 철자법, 대소문자 접기 등)</li>
-<li>eKoNLPy : 제와 금융에 특화된 사전을 구축하고 자체 형태소 분석기를 사용</li>
-</ul>
+### **진행 중인 작업** (2차)
+- 크롤링 시스템 안정화 및 성능 개선
+- 데이터 수집 완료 (MPB, 뉴스, 채권, 금리)
+- 전체 파이프라인 재구성 및 최적화
 
-<br/>
-
-✔ <b>모델링 및 평가 </b>
-<ul>
-<li>n-gram : 단어의 품사를 명사(NNG), 형용사(VA), 부사(MAG), 동사(VV), 부정사(VCN) 총 5개로 설정</li>
-<li>극성분류</li>
-<li>Deep Learning</li>
-<li>NBC</li>
-</ul>
+### **계획된 작업**
+- 개선된 모델링 및 평가
+- 실시간 예측 시스템 구축
+- 성능 벤치마킹 및 검증
 
 <br/>
 
 ## 5. 프로젝트 환경 및 언어
-✔ <b>개발 환경</b> : Visual Studio Code, Jupyter Lab, PostgreSQL, Github  
-<br/>
-✔ <b>개발 언어 및 모듈</b> : Python 3.9+, PostgreSQL, Pandas, Numpy, eKoNLPy, Scrapy
-<br/>
-✔ <b>데이터베이스</b> : PostgreSQL (한국어 텍스트 최적화, JSONB 지원)
+**개발 환경** : Visual Studio Code, Jupyter Lab, PostgreSQL, Github  
+
+**개발 언어 및 모듈** : Python 3.12, PostgreSQL, Pandas, Numpy, eKoNLPy, Scrapy, PyPDF2, BeautifulSoup4
+
+**데이터베이스** : PostgreSQL (한국어 텍스트 최적화, JSONB 지원)
 
 
 <br/>
 
-## 6. 팀(BOK_TEAM_1) 구성
+## 6. 팀 구성
 - 김도형(팀장) : dkswhale@gmail.com      
 - 김관용 : kwanyou2@gmail.com  
 - 윤종헌 : yoonjh0420@gmail.com  
@@ -70,14 +61,14 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 
 ### 환경 설정
 ```bash
-# 1. Python 가상환경 생성
-python -m venv mpb_env
-source mpb_env/bin/activate  # Windows: mpb_env\Scripts\activate
+# 1. Conda 환경 생성 및 활성화
+conda create -n ds_env python=3.12
+conda activate ds_env
 
 # 2. 의존성 설치
 pip install -r requirements.txt
 
-# 3. PostgreSQL 설정
+# 3. PostgreSQL 설정 (선택사항)
 brew install postgresql  # macOS
 brew services start postgresql
 createdb mpb_stance_mining
@@ -85,28 +76,20 @@ createdb mpb_stance_mining
 # 4. 환경변수 설정
 cp .env.example .env
 # .env 파일을 편집하여 PostgreSQL 설정 입력
-
-# 5. 데이터베이스 스키마 초기화
-psql -U postgres -d mpb_stance_mining -f database/schema.sql
 ```
 
-### 실행
+### 데이터 수집 실행
 ```bash
-# 데이터베이스 연결 테스트
-python database/test_connection.py
+# MPB, 금리, 채권 데이터 수집
+./crawler/scripts/run_auxiliary_collectors.sh
 
-# 전체 파이프라인 실행
-python main_pipeline.py --stage full
+# 뉴스 데이터 수집
+./crawler/scripts/run_news_collector.sh
 
-# 단계별 실행
-python main_pipeline.py --stage crawl
-python main_pipeline.py --stage process
-python main_pipeline.py --stage train
-python main_pipeline.py --stage predict
+# 개별 크롤러 실행 (예시)
+cd crawler/MPB
+scrapy crawl mpb_crawler_perfect -o ../../data/mpb_minutes.json
 ```
-
-## 8. 기타
-- [github](https://github.com/sesac-analyst/BOK_TEAM_1/tree/main)
 
 
 
