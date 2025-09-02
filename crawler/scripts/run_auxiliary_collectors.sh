@@ -8,7 +8,7 @@ echo "보조 데이터 수집 시작: $(date)"
 echo "=========================================="
 
 # 환경 설정 (프로젝트 루트 기준)
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction
 source /opt/anaconda3/etc/profile.d/conda.sh
 conda activate ds_env
 
@@ -113,11 +113,11 @@ if [ -f "../../data/interest_rates_complete.json" ]; then
 fi
 
 # 채권 리포트 개수
-bond_count=$(find ../../data/bond_reports -name "*.json" 2>/dev/null | wc -l)
+bond_count=$(find ../BOND/dataset_improved -name "*.csv" 2>/dev/null | wc -l)
 echo "채권 리포트 파일: ${bond_count}개"
 
-# PDF 파일 개수
-pdf_count=$(find ../../data/bond_reports -name "*.pdf" 2>/dev/null | wc -l)
+# PDF 파일 개수  
+pdf_count=$(find ../BOND/pdfs -name "*.pdf" 2>/dev/null | wc -l)
 echo "PDF 파일: ${pdf_count}개"
 
 echo ""

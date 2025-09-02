@@ -27,7 +27,7 @@
 
 ### 1. 테스트 모드 (빠른 확인 - 권장)
 ```bash
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/scripts
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction/crawler/scripts
 /opt/anaconda3/envs/ds_env/bin/python final_paper_reproduction_crawler_2014_2025.py --test
 ```
 - **수집 범위**: 2025년 3-8월 (최근 6개월)
@@ -95,7 +95,7 @@ cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/scripts
 
 ### InfoMax 크롤러 (가장 안정적)
 ```bash
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/InfoMax/infomax_crawler
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction/crawler/InfoMax/infomax_crawler
 /opt/anaconda3/envs/ds_env/bin/scrapy crawl infomax_fixed \
   -a start_date=2024-01-01 \
   -a end_date=2024-01-31 \
@@ -105,7 +105,7 @@ cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/InfoMax/infomax_cr
 
 ### Yonhap 크롤러 (개선된 네이버 검색 방식)
 ```bash
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/yh/yh_crawler
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction/crawler/yh/yh_crawler
 /opt/anaconda3/envs/ds_env/bin/scrapy crawl yh_fixed \
   -a start_date=2024-01-01 \
   -a end_date=2024-01-31 \
@@ -115,7 +115,7 @@ cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/yh/yh_crawler
 
 ### 콜금리 크롤러 (가장 빠름)
 ```bash
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining/crawler/call_ratings/call_ratings_crawler
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction/crawler/call_ratings/call_ratings_crawler
 /opt/anaconda3/envs/ds_env/bin/scrapy crawl call_ratings \
   -s CLOSESPIDER_ITEMCOUNT=50 \
   -o test_output.json

@@ -6,7 +6,7 @@ echo "뉴스 데이터 수집 시작: $(date)"
 echo "=========================================="
 
 # 프로젝트 루트로 이동
-cd /Users/lord_jubin/Desktop/my_git/mpb-stance-mining
+cd /Users/lord_jubin/Desktop/my_git/korea-policy-rate-prediction
 source /opt/anaconda3/etc/profile.d/conda.sh
 conda activate ds_env
 

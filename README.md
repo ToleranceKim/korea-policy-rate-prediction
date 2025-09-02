@@ -1,9 +1,19 @@
-# 📌 기준 금리 예측 프로젝트
+# Korea Policy Rate Prediction
+> Forecasting Bank of Korea's Base Rate (한국은행 기준금리) using financial text mining
 ## 1. 프로젝트 개요
 <img src="./assets/pipeline.png" style="width:100%;">
 
 ## 2. 프로젝트 목적
-Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Korea 논문 구현 프로젝트로 뉴스기사, 채권분석리포트, 금융통화위원회 의사록을 크롤링해 텍스트 데이터를 얻고 데이터를 자연어 처리, 모델링 과정을 거쳐 감성 분석을 진행한 후 이를 통해 머신러닝, 딥러닝 모델에 학습시켜 다음 금리의 방향성을 예측하고자 한다.
+Based on the paper "Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Korea", this project predicts Korea's policy rate (Bank of Korea Base Rate) direction using financial text mining and machine learning approaches.
+
+**Key Data Sources:**
+- Bank of Korea Monetary Policy Board minutes
+- Financial news articles (Yonhap, Edaily, InfoMax)  
+- Bond analysis reports from securities firms
+- Call rate and interest rate data
+
+**Methodology:**
+Financial text → NLP preprocessing → Sentiment analysis → ML/DL models → Policy rate direction prediction
 <!-- - 프로젝트 기간 : 2024.08.08 - 2024.08.28
 - 프로그래밍 언어 : Python
 - 팀원 : 김도형, 김관용, 원형일, 윤종헌, 이현정 -->
