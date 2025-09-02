@@ -53,17 +53,39 @@ class MpbCrawlerPerfectSpider(scrapy.Spider):
     def parse_first_page(self, response):
         """첫 페이지에서 필요한 페이지 범위 파악"""
         
-        # 작년 사양대로 효율적인 페이지 설정
-        # 실제 데이터는 처음 몇 페이지에 집중됨
-        if self.start_year >= 2024:
-            # 2024년 이후: 10페이지면 충분 (약 100건)
-            self.total_pages = 10
-        elif self.start_year >= 2020:
-            # 2020-2023년: 30페이지 (약 300건)
-            self.total_pages = 30
+        # 페이지네이션에서 마지막 페이지 번호 동적으로 찾기
+        last_page = None
+        
+        # 방법 1: 페이지 번호 직접 찾기
+        page_links = response.css('div.paging a::text').getall()
+        if page_links:
+            # 숫자만 필터링
+            page_numbers = [p for p in page_links if p.isdigit()]
+            if page_numbers:
+                last_page = max(int(p) for p in page_numbers)
+        
+        # 방법 2: 마지막 페이지 링크에서 추출
+        if not last_page:
+            last_link = response.css('a.pg_last::attr(onclick)').get()
+            if last_link:
+                import re
+                match = re.search(r'pageIndex[\'"]?\s*[:=]\s*(\d+)', last_link)
+                if match:
+                    last_page = int(match.group(1))
+        
+        # 동적 페이지 수 설정 또는 충분히 큰 기본값 사용
+        if last_page:
+            self.total_pages = min(last_page, 200)  # 최대 200페이지로 제한
+            self.logger.info(f"🎯 동적으로 감지된 전체 페이지 수: {self.total_pages}개")
         else:
-            # 2014-2019년: 50페이지 (약 500건)
-            self.total_pages = 50
+            # 기본값: 충분히 크게 설정
+            if self.start_year >= 2024:
+                self.total_pages = 50  # 500건
+            elif self.start_year >= 2020:
+                self.total_pages = 100  # 1000건
+            else:
+                self.total_pages = 150  # 1500건
+            self.logger.info(f"🎯 기본 페이지 수 사용: {self.total_pages}개")
         
         self.logger.info(f"🎯 크롤링할 전체 페이지 수: {self.total_pages:,}개")
         

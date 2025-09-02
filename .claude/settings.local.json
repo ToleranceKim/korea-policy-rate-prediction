@@ -139,12 +139,14 @@
       "Bash(git log:*)",
       "Bash(/opt/anaconda3/envs/ds_env/bin/scrapy crawl mpb_crawler_perfect -a start_year=2024 -a end_year=2024 -s CLOSESPIDER_ITEMCOUNT=5 -s LOG_LEVEL=INFO -o /tmp/test_mpb_2024_verification.json)",
       "Bash(for file in news_*_*.json)",
-      "Bash(do echo -n \"$file: \")"
+      "Bash(do echo -n \"$file: \")",
+      "Bash(/opt/anaconda3/envs/ds_env/bin/scrapy crawl interest_rates_complete -a start_year=2014 -a end_year=2025 -o ../../data/interest_rates_2014_2025.json -s LOG_LEVEL=INFO)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
       "/tmp"
     ]
-  }
+  },
+  "outputStyle": "default"
 }
