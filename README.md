@@ -11,7 +11,7 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 <br/>
 
 ## 3. 프로젝트 기간
-- **1차 개발**: 2024년 8월 8일 - 2024년 8월 28일 (논문 구현)
+- **1차 개발**: 2024년 8월 8일 - 2024년 8월 28일 (기본 시스템 구축)
 - **2차 개발**: 2025년 7월 - 현재 (시스템 안정화 및 개선)
 
 
@@ -23,8 +23,8 @@ Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Ko
 ### **완료된 작업** (1차)
 - 기본 크롤링 시스템 구축
 - 데이터 전처리 파이프라인 (eKoNLPy 기반)
-- 기본 모델링 프레임워크 (NBC, Deep Learning)
-- n-gram 기반 감성 분석 시스템
+- NBC 모델링 구현 (부분적)
+- n-gram 기반 감성 분석 프레임워크
 
 ### **진행 중인 작업** (2차)
 - 크롤링 시스템 안정화 및 성능 개선
