@@ -1,0 +1,20 @@
+# Language detection overrides for GitHub
+*.ipynb linguist-language=Jupyter-Notebook
+*.py linguist-language=Python
+*.sql linguist-language=SQL linguist-detectable=false
+*.cfg linguist-language=INI linguist-detectable=false
+
+# Mark vendored/generated files
+*.pyc linguist-generated=true
+__pycache__/ linguist-generated=true
+.DS_Store linguist-generated=true
+
+# Documentation
+*.md linguist-documentation=true
+*.txt linguist-documentation=true
+
+# Exclude from language statistics
+crawler/archive/* linguist-vendored=true
+database/*.sql linguist-vendored=true
+*.min.js linguist-vendored=true
+*.min.css linguist-vendored=true
