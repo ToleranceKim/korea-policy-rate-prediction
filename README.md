@@ -22,6 +22,7 @@ Financial text → NLP preprocessing → Sentiment analysis → ML/DL models →
 
 ## 3. 프로젝트 기간
 - **1차 개발**: 2024년 8월 8일 - 2024년 8월 28일 (기본 시스템 구축)
+  - [1차 개발 레포지토리](https://github.com/sesac-analyst/BOK_TEAM_1)
 - **2차 개발**: 2025년 7월 - 현재 (시스템 안정화 및 개선)
 
 
@@ -128,4 +129,3 @@ scrapy crawl mpb_crawler_perfect -o ../../data/mpb_minutes.json
 #### 5. 팀(BOK_TEAM_1) 구성 
 
 ##### 김도형(팀장), 김관용, 윤종헌, 이현정, 원형일 -->
-# Cache refresh trigger
