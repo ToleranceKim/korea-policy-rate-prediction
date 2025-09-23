@@ -1,0 +1,13 @@
+{
+  "total_sentences": 2823248,
+  "n_estimators": 30,
+  "test_size": 0.1,
+  "mean_f1": 0.6775467948908417,
+  "std_f1": 0.0011034469672068766,
+  "ensemble_accuracy": 0.6778818737270875,
+  "ensemble_precision": 0.7021827439328842,
+  "ensemble_recall": 0.727687953954555,
+  "ensemble_f1": 0.7147078753199819,
+  "hawkish_ngrams": 339454,
+  "dovish_ngrams": 331162
+}

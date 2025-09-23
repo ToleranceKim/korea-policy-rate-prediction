@@ -47,12 +47,21 @@ Financial text → NLP preprocessing → Sentiment analysis → ML/DL models →
 - 실시간 예측 시스템 구축
 - 성능 벤치마킹 및 검증
 
+### **현재 성능 지표** (2025-09-23 기준)
+| 모델 | F1 Score | Precision | Recall | Accuracy |
+|------|----------|-----------|--------|-----------|
+| NBC (30x Bagging) | **71.47%** | 70.22% | 72.77% | 67.79% |
+| 논문 벤치마크 | 67-68% | - | - | - |
+
+- 총 2,823,248개 문장으로 학습
+- 1개월 후 콜금리 변동 기반 라벨링 (논문과 동일)
+
 <br/>
 
 ## 5. 프로젝트 환경 및 언어
 **개발 환경** : Visual Studio Code, Jupyter Lab, PostgreSQL, Github  
 
-**개발 언어 및 모듈** : Python 3.12, PostgreSQL, Pandas, Numpy, eKoNLPy, Scrapy, PyPDF2, BeautifulSoup4
+**개발 언어 및 모듈** : Python 3.12, PostgreSQL, Pandas, Numpy, eKoNLPy, Scrapy, PyPDF2, BeautifulSoup4, scikit-learn, MeCab
 
 **데이터베이스** : PostgreSQL (한국어 텍스트 최적화, JSONB 지원)
 
@@ -100,6 +109,24 @@ cp .env.example .env
 # 개별 크롤러 실행 (예시)
 cd crawler/MPB
 scrapy crawl mpb_crawler_perfect -o ../../data/mpb_minutes.json
+```
+
+### 모델 학습 및 평가
+```bash
+# 전체 문장 단위 NBC 파이프라인 실행
+./run_sentence_pipeline.sh
+
+# 결과 확인
+cat modeling/sentence_nbc/model_stats.json
+```
+
+### 시각화 생성
+```bash
+# 실제 데이터 기반 시각화
+python visualizations/real_visualization_generator.py
+
+# 포트폴리오 시각화
+python visualizations/portfolio_visualizations.py
 ```
 
 

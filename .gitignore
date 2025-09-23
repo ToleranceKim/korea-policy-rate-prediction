@@ -139,6 +139,12 @@ data/
 crawler/data/
 crawler/BOND/*.pdf
 crawler/BOND/dataset_2/
+cleansing/cleaned_data/
+*.pkl
+*_real.json
+model_data_stats.json
+modeling/nbc/date_label.json
+modeling/nbc/date_ngram.json
 
 # Log files
 logs/
