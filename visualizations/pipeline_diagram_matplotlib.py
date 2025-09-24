@@ -92,13 +92,13 @@ def create_pipeline_diagram():
 
     # 수집 방법 박스
     methods = [
-        ('연합 API\n(2016+)', 2),
-        ('BeautifulSoup\nHTML', 5),
-        ('BeautifulSoup\nHTML', 8),
-        ('Scrapy\n+ PDF', 10.5),
-        ('Scrapy\n한은', 12),
-        ('Scrapy\n대한상공', 13.5),
-        ('BeautifulSoup\n네이버', 15)
+        ('API 호출\n(JSON)', 2),
+        ('웹페이지\n크롤링', 5),
+        ('웹페이지\n크롤링', 8),
+        ('PDF 다운로드\n→텍스트 추출', 10.5),
+        ('한은 사이트\nJS 파싱', 12),
+        ('대한상공회의소\n테이블 추출', 13.5),
+        ('네이버 금융\n페이지 크롤링', 15)
     ]
 
     for text, x in methods:
@@ -129,49 +129,49 @@ def create_pipeline_diagram():
                               facecolor=colors['light'], alpha=0.8,
                               edgecolor=colors['accent2'], linewidth=2)
     ax.add_patch(pool_box)
-    ax.text(11.5, y_pool+0.1, 'ThreadPoolExecutor', fontsize=10, fontweight='bold',
+    ax.text(11.5, y_pool+0.1, '병렬 처리', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(11.5, y_pool-0.15, '채권 전용 (5 workers)', fontsize=9,
+    ax.text(11.5, y_pool-0.15, '채권 페이지별 동시 수집\n(5 workers)', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 4. 전처리 파이프라인 레이어 =====
     y_process = 3.5
 
     processes = [
-        ('재시도 로직\n3회', 3),
-        ('중복 제거\n228개', 6),
-        ('통합 정제\n34.6%', 9),
-        ('수집률\n99.8%', 12)
+        ('실패시 재시도\n3회 (2초 간격)', 3),
+        ('중복 제거\nURL+제목 기준\n(228개, 0.06%)', 6),
+        ('노이즈 제거\n기자명, 이메일,\n특수문자 (34.6%)', 9),
+        ('품질 검증\n수집 성공률\n99.8%', 12)
     ]
 
     for text, x in processes:
-        box = FancyBboxPatch((x-0.8, y_process-0.4), 1.6, 0.8,
+        box = FancyBboxPatch((x-1.0, y_process-0.5), 2.0, 1.0,
                              boxstyle='round,pad=0.03',
                              facecolor='white',
                              edgecolor=colors['border'], linewidth=1)
         ax.add_patch(box)
-        ax.text(x, y_process, text, fontsize=9, ha='center', va='center', color=colors['text'])
+        ax.text(x, y_process, text, fontsize=8.5, ha='center', va='center', color=colors['text'])
 
     # 전처리 그룹 박스
-    process_group = FancyBboxPatch((1.5, y_process-0.6), 12, 1.2,
+    process_group = FancyBboxPatch((1.5, y_process-0.7), 12, 1.4,
                                    boxstyle='round,pad=0.05',
                                    facecolor='none', edgecolor=colors['border'],
                                    linewidth=1, linestyle='--', alpha=0.5)
     ax.add_patch(process_group)
-    ax.text(1.8, y_process+0.5, '전처리 파이프라인', fontsize=10, color=colors['text'])
+    ax.text(1.8, y_process+0.6, '전처리 파이프라인', fontsize=10, color=colors['text'])
 
     # ===== 5. 토큰화 레이어 =====
     y_token = 2
 
     token_box = FancyBboxPatch((6, y_token-0.4), 4, 0.8,
                                boxstyle='round,pad=0.05',
-                               facecolor='#e1bee7', alpha=0.9,
-                               edgecolor='#8e44ad', linewidth=2)
+                               facecolor=colors['secondary'], alpha=0.3,
+                               edgecolor=colors['primary'], linewidth=1.5)
     ax.add_patch(token_box)
-    ax.text(8, y_token+0.1, 'eKoNLPy + Mecab', fontsize=11, fontweight='bold',
-            ha='center', va='center')
-    ax.text(8, y_token-0.15, 'POS 필터링 60% | 13GB→2.8GB', fontsize=9,
-            ha='center', va='center', color='#2c3e50')
+    ax.text(8, y_token+0.1, '형태소 분석 (eKoNLPy + Mecab)', fontsize=10, fontweight='bold',
+            ha='center', va='center', color=colors['text'])
+    ax.text(8, y_token-0.15, '품사 태깅 후 명사/동사 추출 | 13GB→2.8GB', fontsize=9,
+            ha='center', va='center', color=colors['text'])
 
     # ===== 6. 저장 레이어 =====
     y_db = 0.5
@@ -179,17 +179,17 @@ def create_pipeline_diagram():
     # PostgreSQL 실린더 모양
     db_rect = FancyBboxPatch((6.5, y_db-0.3), 3, 0.6,
                              boxstyle='round,pad=0.03',
-                             facecolor='#c5e1a5', edgecolor='#27ae60',
-                             linewidth=2.5, alpha=0.9)
+                             facecolor=colors['accent1'], alpha=0.2,
+                             edgecolor=colors['accent1'], linewidth=2)
     ax.add_patch(db_rect)
     db_ellipse = mpatches.Ellipse((8, y_db+0.3), width=3, height=0.3,
-                                  facecolor='#c5e1a5', edgecolor='#27ae60',
-                                  linewidth=2.5, alpha=0.9)
+                                  facecolor=colors['accent1'], alpha=0.2,
+                                  edgecolor=colors['accent1'], linewidth=2)
     ax.add_patch(db_ellipse)
-    ax.text(8, y_db, 'PostgreSQL JSONB', fontsize=11, fontweight='bold',
-            ha='center', va='center')
-    ax.text(8, y_db-0.2, '85개 필드 | Batch 1000', fontsize=9,
-            ha='center', va='center', color='#2c3e50')
+    ax.text(8, y_db, '데이터베이스 저장', fontsize=10, fontweight='bold',
+            ha='center', va='center', color=colors['text'])
+    ax.text(8, y_db-0.2, 'PostgreSQL (JSON 형식) | 85개 필드', fontsize=9,
+            ha='center', va='center', color=colors['text'])
 
     # ===== 화살표 연결 =====
     # 소스 → 수집방법
