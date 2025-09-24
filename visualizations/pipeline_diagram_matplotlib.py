@@ -92,13 +92,13 @@ def create_pipeline_diagram():
 
     # 수집 방법 박스
     methods = [
-        ('REST API\nJSON 응답', 2),
-        ('BeautifulSoup\nHTML 파싱', 5),
-        ('BeautifulSoup\nHTML 파싱', 8),
-        ('Scrapy + PyPDF2\nPDF 텍스트 추출', 10.5),
-        ('Scrapy\nJS 데이터 파싱', 12),
-        ('Scrapy\nHTML 테이블', 13.5),
-        ('BeautifulSoup\n리포트 크롤링', 15)
+        ('연합 API\n2016년 이후', 2),
+        ('BeautifulSoup\n웹페이지 크롤링', 5),
+        ('BeautifulSoup\n웹페이지 크롤링', 8),
+        ('Scrapy + PyPDF2\nPDF → 텍스트', 10.5),
+        ('Scrapy\n한은 사이트', 12),
+        ('Scrapy\n대한상공회의소', 13.5),
+        ('BeautifulSoup\n네이버 금융', 15)
     ]
 
     for text, x in methods:
@@ -118,9 +118,9 @@ def create_pipeline_diagram():
                              facecolor='white',
                              edgecolor=colors['primary'], linewidth=1.5)
     ax.add_patch(seq_box)
-    ax.text(4.5, y_pool+0.1, 'Sequential', fontsize=10, fontweight='bold',
+    ax.text(4.5, y_pool+0.1, '순차 처리', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(4.5, y_pool-0.15, 'for source in sources', fontsize=9,
+    ax.text(4.5, y_pool-0.15, '소스별 순서대로', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ThreadPoolExecutor (채권 전용)
@@ -131,17 +131,17 @@ def create_pipeline_diagram():
     ax.add_patch(pool_box)
     ax.text(11.5, y_pool+0.1, 'ThreadPoolExecutor', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(11.5, y_pool-0.15, 'max_workers=5\nconcurrent.futures', fontsize=9,
+    ax.text(11.5, y_pool-0.15, '5개 동시 실행', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 4. 전처리 파이프라인 레이어 =====
     y_process = 3.5
 
     processes = [
-        ('Retry Logic\nmax_retries=3\ntime.sleep(2)', 3),
-        ('Deduplication\nhashlib.md5()\nURL+title 기반', 6),
-        ('Regex Cleansing\nre.sub() 패턴\n기자명/태그 제거', 9),
-        ('Validation\n수집률 검증\n99.8% 성공', 12)
+        ('재시도 로직\n3회, 2초 간격', 3),
+        ('중복 제거\nMD5 해시\nURL+제목', 6),
+        ('정규식 정제\n노이즈 패턴 제거\n기자명/태그/특수문자', 9),
+        ('품질 검증\n수집률 확인\n99.8% 성공', 12)
     ]
 
     for text, x in processes:
@@ -170,7 +170,7 @@ def create_pipeline_diagram():
     ax.add_patch(token_box)
     ax.text(8, y_token+0.1, 'eKoNLPy + Mecab', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(8, y_token-0.15, 'POS tagging → NNG/VV/VA 필터링 | 79% 압축', fontsize=9,
+    ax.text(8, y_token-0.15, '품사 태깅 → 명사/동사 추출 | 79% 압축', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 6. 저장 레이어 =====
@@ -188,7 +188,7 @@ def create_pipeline_diagram():
     ax.add_patch(db_ellipse)
     ax.text(8, y_db, 'PostgreSQL JSONB', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(8, y_db-0.2, 'psycopg2.extras.execute_batch() | size=1000', fontsize=9,
+    ax.text(8, y_db-0.2, '배치 삽입 (1000건씩) | 85개 필드', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 화살표 연결 =====
@@ -202,8 +202,9 @@ def create_pipeline_diagram():
     ax.annotate('', xy=(8, y_method+0.4), xytext=(8, y_source-0.5), arrowprops=arrow_props)
 
     # 기타 소스 연결
-    ax.annotate('', xy=(11, y_method+0.4), xytext=(11, y_source-0.5), arrowprops=arrow_props)
-    ax.annotate('', xy=(13, y_method+0.4), xytext=(13, y_source-0.5), arrowprops=arrow_props)
+    ax.annotate('', xy=(10.5, y_method+0.4), xytext=(10.5, y_source-0.5), arrowprops=arrow_props)
+    ax.annotate('', xy=(12, y_method+0.4), xytext=(12, y_source-0.5), arrowprops=arrow_props)
+    ax.annotate('', xy=(13.5, y_method+0.4), xytext=(13.5, y_source-0.5), arrowprops=arrow_props)
     ax.annotate('', xy=(15, y_method+0.4), xytext=(15, y_source-0.5), arrowprops=arrow_props)
 
     # 뉴스 수집방법 → 순차 처리
