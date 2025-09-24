@@ -20,7 +20,8 @@
       - Scrapy 기반 UnifiedNewsCrawler 설계 및 구현
       - Edaily preview 버그 수정으로 완전 본문 수집 달성 (300자→1,287자)
       - InfoMax 3,000자 제한 해제, 연합뉴스 API 통합
-      - ThreadPoolExecutor(max_workers=5) 병렬 처리로 4.5배 속도 향상
+      - 채권 크롤러: ThreadPoolExecutor(max_workers=5) 페이지 병렬 처리
+      - 뉴스 크롤러: 순차 처리로 안정적 수집 (연합, 이데일리, 인포맥스)
       - 3회 재시도 로직 구현 (exponential backoff: 2s, 4s, 8s)
 
     · **데이터 전처리**: prepare_paper_dataset.py 구현
@@ -83,7 +84,8 @@
     · 품질 관리:
       - 중복 제거: 228개 (0.06%)
       - 실패 재시도: 3회, exponential backoff
-      - 병렬 처리: ThreadPoolExecutor(5 workers), 4.5배 속도↑
+      - 채권 크롤링: ThreadPoolExecutor(5 workers) 페이지 병렬
+      - 뉴스 크롤링: 소스별 순차 처리 (안정적 수집)
     · PostgreSQL JSONB 저장 (85개 필드, 배치 1000)
 
     **② 정제 및 토큰화 (unified_cleansing.py + eKoNLPy)**
@@ -103,7 +105,9 @@
     **③ N-gram 생성 (53.4M→1.58M)**
     · 1-5gram 추출: 53,371,110개 초기 생성
     · 빈도 필터링(>5): 1,577,569개 (97% 노이즈 제거)
-    · Counter 기반 메모리 최적화 → 48.1MB1. 데이터 수집: Scrapy 2.11, BeautifulSoup4, ThreadPoolExecutor
+    · Counter 기반 메모리 최적화 → 48.1MB
+
+1. 데이터 수집: Scrapy 2.11, BeautifulSoup4, requests
 
 2. 데이터 전처리: pandas, regex, eKoNLPy 0.97+, PostgreSQL
 
@@ -164,13 +168,18 @@
       - 2016년 이후: 공식 API (`ars.yna.co.kr/api/v2`, JSON 응답)
       - 2014-2015년: 네이버 뉴스 아카이브 크롤링
 
-- **병렬 처리 아키텍처 및 성능**
+- **데이터 수집 아키텍처**
     ```python
-    # 실제 구현된 병렬 처리 코드
-    from concurrent.futures import ThreadPoolExecutor
+    # 뉴스 크롤러: 순차 처리 (연합, 이데일리, 인포맥스)
+    def crawl_all(self, sources=['yonhap', 'edaily', 'infomax']):
+        for source in sources:
+            articles = self.crawl_{source}(start_date, end_date)
 
-    executor = ThreadPoolExecutor(max_workers=5)
-    # 단일 스레드: 1,000개/시간 → 5 workers: 4,500개/시간 (4.5배↑)
+    # 채권 크롤러: ThreadPoolExecutor로 페이지 병렬 처리
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(self.process_page, page): page
+                   for page in range(1, total_pages + 1)}
 
     # 재시도 로직 (exponential backoff)
     for retry in range(max_retries):  # max_retries=3
@@ -192,11 +201,11 @@
 
 - **시간대별 수집 전략**
 
-    | 시간대 | 수집 비중 | 특징 | 병렬 워커 |
+    | 시간대 | 수집 비중 | 특징 | 처리 방식 |
     |--------|----------|------|-----------|
-    | 09-11시 | 40% | 주요 뉴스 발행 | 5 workers |
-    | 14-16시 | 25% | 오후 업데이트 | 3 workers |
-    | 23-06시 | 35% | 야간 재수집 | 5 workers |
+    | 09-11시 | 40% | 주요 뉴스 발행 | 순차 처리 |
+    | 14-16시 | 25% | 오후 업데이트 | 순차 처리 |
+    | 23-06시 | 35% | 야간 재수집 | 순차 처리 |
 
 - **수집 성과 및 데이터 분포**
 
@@ -512,7 +521,8 @@
 
     **1. 데이터 수집**
     · 라이브러리: Scrapy 2.11, BeautifulSoup4, Requests
-    · 병렬처리: ThreadPoolExecutor (max_workers=5)
+    · 채권 크롤링: ThreadPoolExecutor (max_workers=5)
+    · 뉴스 크롤링: 소스별 순차 처리
     · API: 연합뉴스 API v2 (2016년 이후)
 
     **2. 데이터 전처리**
@@ -522,7 +532,7 @@
 
     **3. 특징 추출**
     · N-gram 생성: ast.literal_eval, Counter
-    · 병렬화: multiprocessing.Pool (8 cores)
+    · 토큰화 병렬화: multiprocessing.Pool (8 cores)
     · 메모리 관리: chunk 처리 (100,000개 단위)
 
     **4. 모델링**

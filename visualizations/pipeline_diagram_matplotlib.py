@@ -107,20 +107,30 @@ def create_pipeline_diagram():
         ax.add_patch(ellipse)
         ax.text(x, y_method, text, fontsize=9, ha='center', va='center', color=colors['text'])
 
-    # ===== 3. 병렬 처리 레이어 =====
+    # ===== 3. 처리 방식 레이어 =====
     y_pool = 5.5
 
-    # ThreadPoolExecutor 박스 (강조)
-    pool_box = FancyBboxPatch((6, y_pool-0.5), 4, 1,
+    # 순차 처리 (뉴스)
+    seq_box = FancyBboxPatch((3, y_pool-0.4), 3, 0.8,
+                             boxstyle='round,pad=0.05',
+                             facecolor='white',
+                             edgecolor=colors['primary'], linewidth=1.5)
+    ax.add_patch(seq_box)
+    ax.text(4.5, y_pool+0.1, '순차 처리', fontsize=10, fontweight='bold',
+            ha='center', va='center', color=colors['text'])
+    ax.text(4.5, y_pool-0.15, '뉴스 크롤링', fontsize=9,
+            ha='center', va='center', color=colors['text'])
+
+    # ThreadPoolExecutor (채권 전용)
+    pool_box = FancyBboxPatch((10, y_pool-0.4), 3, 0.8,
                               boxstyle='round,pad=0.05',
                               facecolor=colors['light'], alpha=0.8,
                               edgecolor=colors['accent2'], linewidth=2)
     ax.add_patch(pool_box)
-    ax.text(8, y_pool+0.2, 'ThreadPoolExecutor', fontsize=12, fontweight='bold',
+    ax.text(11.5, y_pool+0.1, 'ThreadPoolExecutor', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(8, y_pool-0.1, 'max_workers=5', fontsize=9, ha='center', va='center', color=colors['text'])
-    ax.text(8, y_pool-0.3, '4,500개/시간 (4.5x↑)', fontsize=9, ha='center',
-            va='center', color=colors['accent1'], fontweight='bold')
+    ax.text(11.5, y_pool-0.15, '채권 전용 (5 workers)', fontsize=9,
+            ha='center', va='center', color=colors['text'])
 
     # ===== 4. 전처리 파이프라인 레이어 =====
     y_process = 3.5
@@ -194,14 +204,27 @@ def create_pipeline_diagram():
     ax.annotate('', xy=(13, y_method+0.4), xytext=(13, y_source-0.5), arrowprops=arrow_props)
     ax.annotate('', xy=(15, y_method+0.4), xytext=(15, y_source-0.5), arrowprops=arrow_props)
 
-    # 수집방법 → ThreadPool (집중)
-    for x in [2, 5, 8, 11, 13, 15]:
-        ax.annotate('', xy=(8, y_pool+0.5), xytext=(x, y_method-0.4),
+    # 뉴스 수집방법 → 순차 처리
+    for x in [2, 5, 8]:
+        ax.annotate('', xy=(4.5, y_pool+0.4), xytext=(x, y_method-0.4),
                    arrowprops=dict(arrowstyle='->', lw=1, color=colors['primary'], alpha=0.4))
 
-    # ThreadPool → 전처리 → 토큰화 → DB (메인 플로우)
+    # 보조 데이터 → 순차 처리 (MPB, 금리)
+    for x in [11, 13]:
+        ax.annotate('', xy=(4.5, y_pool+0.4), xytext=(x, y_method-0.4),
+                   arrowprops=dict(arrowstyle='->', lw=1, color=colors['border'], alpha=0.4))
+
+    # 채권 → ThreadPool
+    ax.annotate('', xy=(11.5, y_pool+0.4), xytext=(15, y_method-0.4),
+               arrowprops=dict(arrowstyle='->', lw=1.5, color=colors['accent2'], alpha=0.6))
+
+    # 처리 방식 → 전처리 (메인 플로우)
     main_arrow = dict(arrowstyle='->', lw=2, color=colors['text'], alpha=0.6)
-    ax.annotate('', xy=(6, y_process+0.5), xytext=(8, y_pool-0.6), arrowprops=main_arrow)
+    # 순차 처리 → 전처리
+    ax.annotate('', xy=(6, y_process+0.5), xytext=(4.5, y_pool-0.5), arrowprops=main_arrow)
+    # ThreadPool → 전처리
+    ax.annotate('', xy=(9, y_process+0.5), xytext=(11.5, y_pool-0.5), arrowprops=main_arrow)
+    # 전처리 → 토큰화 → DB
     ax.annotate('', xy=(8, y_token+0.5), xytext=(9, y_process-0.5), arrowprops=main_arrow)
     ax.annotate('', xy=(8, y_db+0.6), xytext=(8, y_token-0.5), arrowprops=main_arrow)
 
@@ -226,8 +249,9 @@ def create_pipeline_diagram():
 
     # 범례
     legend_elements = [
-        mpatches.Patch(color=colors['primary'], alpha=0.3, label='데이터 소스'),
-        mpatches.Patch(color=colors['accent2'], alpha=0.3, label='병렬 처리'),
+        mpatches.Patch(color=colors['primary'], alpha=0.3, label='뉴스 데이터'),
+        mpatches.Patch(color=colors['border'], alpha=0.3, label='보조 데이터'),
+        mpatches.Patch(color=colors['accent2'], alpha=0.3, label='병렬 처리 (채권)'),
         mpatches.Patch(color=colors['accent1'], alpha=0.3, label='저장소')
     ]
     ax.legend(handles=legend_elements, loc='upper left', fontsize=9,
