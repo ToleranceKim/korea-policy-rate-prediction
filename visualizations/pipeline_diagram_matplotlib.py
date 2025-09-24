@@ -64,8 +64,9 @@ def create_pipeline_diagram():
 
     # 기타 데이터 소스
     other_sources = [
-        ('MPB 의사록', '224개 PDF', 11),
-        ('금리 데이터', '2,907개', 13),
+        ('MPB 의사록', '224개 PDF', 10.5),
+        ('콜금리', '2,866개', 12),
+        ('기준금리', '41개', 13.5),
         ('채권 리포트', '6,515개', 15)
     ]
 
@@ -91,12 +92,13 @@ def create_pipeline_diagram():
 
     # 수집 방법 박스
     methods = [
-        ('REST API\nJSON', 2),
-        ('HTML\n크롤링', 5),
-        ('Ajax\n크롤링', 8),
-        ('PDF\n추출', 11),
-        ('CSV\n다운로드', 13),
-        ('네이버\n크롤링', 15)
+        ('연합 API\n(2016+)', 2),
+        ('BeautifulSoup\nHTML', 5),
+        ('BeautifulSoup\nHTML', 8),
+        ('Scrapy\n+ PDF', 10.5),
+        ('Scrapy\n한은', 12),
+        ('Scrapy\n대한상공', 13.5),
+        ('BeautifulSoup\n네이버', 15)
     ]
 
     for text, x in methods:
@@ -136,10 +138,10 @@ def create_pipeline_diagram():
     y_process = 3.5
 
     processes = [
-        ('재시도 로직\n3회 시도', 3),
+        ('재시도 로직\n3회', 3),
         ('중복 제거\n228개', 6),
         ('통합 정제\n34.6%', 9),
-        ('품질 검증\n99.8%', 12)
+        ('수집률\n99.8%', 12)
     ]
 
     for text, x in processes:
@@ -210,7 +212,7 @@ def create_pipeline_diagram():
                    arrowprops=dict(arrowstyle='->', lw=1, color=colors['primary'], alpha=0.4))
 
     # 보조 데이터 → 순차 처리 (MPB, 금리)
-    for x in [11, 13]:
+    for x in [10.5, 12, 13.5]:
         ax.annotate('', xy=(4.5, y_pool+0.4), xytext=(x, y_method-0.4),
                    arrowprops=dict(arrowstyle='->', lw=1, color=colors['border'], alpha=0.4))
 

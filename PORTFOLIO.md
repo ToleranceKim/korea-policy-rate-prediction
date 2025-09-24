@@ -17,12 +17,12 @@
 - **담당역할 (모델링 제외 전체)**
 
     · **데이터 수집**: 359,151개 뉴스 크롤링 파이프라인 구축
-      - Scrapy 기반 UnifiedNewsCrawler 설계 및 구현
+      - BeautifulSoup 및 Scrapy 기반 크롤러 구현
       - Edaily preview 버그 수정으로 완전 본문 수집 달성 (300자→1,287자)
-      - InfoMax 3,000자 제한 해제, 연합뉴스 API 통합
+      - InfoMax 3,000자 제한 해제, 연합뉴스 API 통합 (2016+)
       - 채권 크롤러: ThreadPoolExecutor(max_workers=5) 페이지 병렬 처리
-      - 뉴스 크롤러: 순차 처리로 안정적 수집 (연합, 이데일리, 인포맥스)
-      - 3회 재시도 로직 구현 (exponential backoff: 2s, 4s, 8s)
+      - 뉴스 크롤러: BeautifulSoup 순차 처리 (이데일리, 인포맥스)
+      - 3회 재시도 로직 구현 (2초 간격)
 
     · **데이터 전처리**: prepare_paper_dataset.py 구현
       - 85개 필드 스키마 설계 (tokenized_content, pos_tags, sentiment scores)
@@ -83,9 +83,10 @@
       - 기준금리 41개 변동점 (중복 제거 후)
     · 품질 관리:
       - 중복 제거: 228개 (0.06%)
-      - 실패 재시도: 3회, exponential backoff
+      - 실패 재시도: 3회, 2초 간격
       - 채권 크롤링: ThreadPoolExecutor(5 workers) 페이지 병렬
-      - 뉴스 크롤링: 소스별 순차 처리 (안정적 수집)
+      - 뉴스 크롤링: BeautifulSoup 순차 처리
+      - 금리/MPB: Scrapy 순차 처리
     · PostgreSQL JSONB 저장 (85개 필드, 배치 1000)
 
     **② 정제 및 토큰화 (unified_cleansing.py + eKoNLPy)**
@@ -108,6 +109,9 @@
     · Counter 기반 메모리 최적화 → 48.1MB
 
 1. 데이터 수집: Scrapy 2.11, BeautifulSoup4, requests
+   - Scrapy: MPB 의사록, 기준금리, 콜금리
+   - BeautifulSoup: 이데일리, 인포맥스, 채권 리포트
+   - requests + API: 연합뉴스 (2016년 이후)
 
 2. 데이터 전처리: pandas, regex, eKoNLPy 0.97+, PostgreSQL
 
@@ -170,28 +174,32 @@
 
 - **데이터 수집 아키텍처**
     ```python
-    # 뉴스 크롤러: 순차 처리 (연합, 이데일리, 인포맥스)
-    def crawl_all(self, sources=['yonhap', 'edaily', 'infomax']):
-        for source in sources:
-            articles = self.crawl_{source}(start_date, end_date)
+    # 연합뉴스: REST API (2016년 이후)
+    url = 'http://ars.yna.co.kr/api/v2/search.asis'
+    response = requests.get(url, params=params)
+
+    # 이데일리/인포맥스: BeautifulSoup HTML 크롤링
+    response = self.session.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # MPB/금리: Scrapy 크롤링
+    class MpbCrawlerSpider(scrapy.Spider):
+        def parse(self, response):
+            for news_item in response.css('li.bbsRowCls'):
 
     # 채권 크롤러: ThreadPoolExecutor로 페이지 병렬 처리
-    from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(self.process_page, page): page
                    for page in range(1, total_pages + 1)}
 
-    # 재시도 로직 (exponential backoff)
-    for retry in range(max_retries):  # max_retries=3
+    # 재시도 로직 (단순 재시도)
+    for retry in range(3):
         try:
             response = session.get(url, timeout=30)
             if response.status_code == 200:
                 break
         except Timeout:
-            delay = 2 ** retry  # 2초, 4초, 8초
-            time.sleep(delay)
-            if retry == 2:
-                timeout = 60  # 마지막 시도는 60초
+            time.sleep(2)  # 2초 고정 대기
     ```
 
 - **데이터 검증 및 품질 관리**
