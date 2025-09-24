@@ -65,7 +65,7 @@ def create_pipeline_diagram():
     # 기타 데이터 소스
     other_sources = [
         ('MPB 의사록', '224개 PDF', 10.5),
-        ('콜금리', '2,866개', 12),
+        ('콜금리 (라벨링)', '2,866개', 12),
         ('기준금리', '41개', 13.5),
         ('채권 리포트', '6,515개', 15)
     ]
@@ -84,7 +84,7 @@ def create_pipeline_diagram():
     # 소스 그룹 라벨
     ax.text(5, y_source+0.7, '뉴스 데이터 (359,151개)', fontsize=11,
             fontweight='bold', ha='center', color=colors['text'])
-    ax.text(13, y_source+0.7, '보조 데이터', fontsize=11,
+    ax.text(13, y_source+0.7, '금융/정책 데이터', fontsize=11,
             fontweight='bold', ha='center', color=colors['text'])
 
     # ===== 2. 수집 방법 레이어 =====
@@ -211,7 +211,7 @@ def create_pipeline_diagram():
         ax.annotate('', xy=(4.5, y_pool+0.4), xytext=(x, y_method-0.4),
                    arrowprops=dict(arrowstyle='->', lw=1, color=colors['primary'], alpha=0.4))
 
-    # 보조 데이터 → 순차 처리 (MPB, 금리)
+    # 금융/정책 데이터 → 순차 처리 (MPB, 금리)
     for x in [10.5, 12, 13.5]:
         ax.annotate('', xy=(4.5, y_pool+0.4), xytext=(x, y_method-0.4),
                    arrowprops=dict(arrowstyle='->', lw=1, color=colors['border'], alpha=0.4))
@@ -252,7 +252,7 @@ def create_pipeline_diagram():
     # 범례
     legend_elements = [
         mpatches.Patch(color=colors['primary'], alpha=0.3, label='뉴스 데이터'),
-        mpatches.Patch(color=colors['border'], alpha=0.3, label='보조 데이터'),
+        mpatches.Patch(color=colors['border'], alpha=0.3, label='금융/정책 데이터'),
         mpatches.Patch(color=colors['accent2'], alpha=0.3, label='병렬 처리 (채권)'),
         mpatches.Patch(color=colors['accent1'], alpha=0.3, label='저장소')
     ]
