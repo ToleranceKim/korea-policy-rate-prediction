@@ -434,9 +434,175 @@ def create_ngram_wordcloud():
     print("   ✓ Saved ngram_wordcloud.png")
 
 
+def create_call_rate_labeling():
+    """일별 콜금리 추이와 1개월 후 변동 기반 라벨링 시각화"""
+    print("\n5. Creating call rate labeling visualization...")
+
+    # 일별 콜금리 데이터 로드
+    call_rate_path = PROJECT_ROOT / 'crawler/data/auxiliary/market_call_rates_daily_2014_2025.csv'
+    df_call = pd.read_csv(call_rate_path)
+
+    # 중복 제거 및 날짜 변환
+    df_call = df_call.drop_duplicates(subset=['날짜'])
+    df_call['date'] = pd.to_datetime(df_call['날짜'])
+    df_call['call_rate'] = df_call['콜금리']
+    df_call = df_call.sort_values('date').reset_index(drop=True)
+
+    # 1개월 후 콜금리 찾기 함수
+    def get_future_rate(date, df):
+        future_date = date + pd.DateOffset(months=1)
+        future_rates = df[df['date'] <= future_date]
+        if not future_rates.empty:
+            return future_rates.iloc[-1]['call_rate']
+        return None
+
+    # 각 날짜에 대한 라벨 계산
+    labels = []
+    for idx, row in df_call.iterrows():
+        current_rate = row['call_rate']
+        future_rate = get_future_rate(row['date'], df_call)
+
+        if future_rate is not None:
+            diff = future_rate - current_rate
+            if diff > 0.03:
+                labels.append('Hawkish')
+            elif diff < -0.03:
+                labels.append('Dovish')
+            else:
+                labels.append('None')
+        else:
+            labels.append('None')
+
+    df_call['label'] = labels
+
+    # 월별 집계 (히트맵용)
+    df_call['year_month'] = df_call['date'].dt.to_period('M')
+    monthly_agg = df_call.groupby(['year_month', 'label']).size().unstack(fill_value=0)
+
+    print(f"   Data period: {df_call['date'].min().strftime('%Y-%m-%d')} to {df_call['date'].max().strftime('%Y-%m-%d')}")
+    print(f"   Total days: {len(df_call)}")
+    print(f"   Days labeled Hawkish: {len(df_call[df_call['label'] == 'Hawkish'])}")
+    print(f"   Days labeled Dovish: {len(df_call[df_call['label'] == 'Dovish'])}")
+    print(f"   Days with no label (±3bp): {len(df_call[df_call['label'] == 'None'])}")
+
+    # 일별 콜금리 추이와 라벨 차트
+    fig, ax = plt.subplots(figsize=(16, 8), facecolor='white')
+
+    # 월별 문서량 데이터 로드 (배경 히트맵용)
+    try:
+        corpus_path = PROJECT_ROOT / 'preprocess/data_combine/corpus_data.csv'
+        if corpus_path.exists():
+            df_corpus = pd.read_csv(corpus_path)
+            df_corpus['Date'] = pd.to_datetime(df_corpus['Date'])
+            df_corpus['year_month'] = df_corpus['Date'].dt.to_period('M')
+            monthly_doc_counts = df_corpus.groupby('year_month').size()
+
+            # 월별 문서량을 배경으로 표시 (회색 농도)
+            max_docs = monthly_doc_counts.max()
+            for period in monthly_agg.index:
+                if period in monthly_doc_counts.index:
+                    doc_count = monthly_doc_counts[period]
+                    # 문서량에 비례한 회색 농도
+                    alpha = 0.05 + (doc_count / max_docs) * 0.15  # 0.05 ~ 0.20 범위
+                    period_start = period.to_timestamp()
+                    period_end = (period + 1).to_timestamp()
+                    ax.axvspan(period_start, period_end, alpha=alpha, color='gray', zorder=1)
+    except Exception as e:
+        print(f"   Note: Could not load document counts: {e}")
+
+    # 금통위 결정일 표시 (기준금리 변경 시점)
+    try:
+        rate_path = PROJECT_ROOT / 'crawler/data/auxiliary/interest_rates_2014_2025.csv'
+        if rate_path.exists():
+            df_rate = pd.read_csv(rate_path)
+            # 날짜 형식 변환
+            def parse_rate_date(row):
+                year = str(row['연도'])
+                date_str = row['날짜']
+                month = date_str.split('월')[0].strip()
+                day = date_str.split('월')[1].replace('일', '').strip()
+                return pd.to_datetime(f"{year}-{month}-{day}", format='%Y-%m-%d')
+
+            df_rate['date'] = df_rate.apply(parse_rate_date, axis=1)
+            df_rate['rate'] = df_rate['기준금리']
+            df_rate['change'] = df_rate['rate'].diff()
+
+            # 금통위 결정일에 세로선 및 화살표
+            for _, row in df_rate.iterrows():
+                ax.axvline(x=row['date'], color='darkgray', linestyle='--', alpha=0.3, linewidth=0.8, zorder=2)
+                if row['change'] > 0:
+                    ax.annotate('↑', xy=(row['date'], 4.2), fontsize=10, color='red', ha='center')
+                elif row['change'] < 0:
+                    ax.annotate('↓', xy=(row['date'], 4.2), fontsize=10, color='green', ha='center')
+    except Exception as e:
+        print(f"   Note: Could not load rate decision dates: {e}")
+
+    # 콜금리 라인 차트
+    ax.plot(df_call['date'], df_call['call_rate'],
+            color=THEME_COLORS['primary_blue'], linewidth=1.5, alpha=0.8, label='일별 콜금리', zorder=2)
+
+    # 모든 Hawkish/Dovish 포인트 표시 (샘플링 없이)
+    hawkish_points = df_call[df_call['label'] == 'Hawkish']
+    dovish_points = df_call[df_call['label'] == 'Dovish']
+
+    # Hawkish 포인트 (1개월 후 상승) - 모두 표시
+    ax.scatter(hawkish_points['date'], hawkish_points['call_rate'],
+               color=THEME_COLORS['hawkish_red'], s=15, zorder=3,
+               marker='^', alpha=0.4, edgecolors='none', label=f'Hawkish ({len(hawkish_points)}일, 1개월 후 ↑)')
+
+    # Dovish 포인트 (1개월 후 하락) - 모두 표시
+    ax.scatter(dovish_points['date'], dovish_points['call_rate'],
+               color=THEME_COLORS['dovish_green'], s=15, zorder=3,
+               marker='v', alpha=0.4, edgecolors='none', label=f'Dovish ({len(dovish_points)}일, 1개월 후 ↓)')
+
+    # 텍스트 박스 - 실제 라벨링 방법 설명
+    textstr = f'''실제 라벨링 방법 (논문 재현):
+· 각 날짜의 콜금리 → 1개월 후 콜금리 비교
+· 변동 > +3bp → Hawkish ({len(df_call[df_call['label'] == 'Hawkish'])}일)
+· 변동 < -3bp → Dovish ({len(df_call[df_call['label'] == 'Dovish'])}일)
+· ±3bp 이내 → 라벨 없음 ({len(df_call[df_call['label'] == 'None'])}일)'''
+
+    props = dict(boxstyle='round,pad=0.6',
+                facecolor=THEME_COLORS['lighter_blue'],
+                edgecolor=THEME_COLORS['primary_blue'],
+                alpha=0.95)
+    ax.text(0.02, 0.97, textstr, transform=ax.transAxes, fontsize=10,
+            verticalalignment='top', bbox=props, fontweight='bold')
+
+    ax.set_title('시장 반응 기반(Market-based) 라벨링: 일별 콜금리와 1개월 후 변동',
+                 fontsize=16, fontweight='bold', color=THEME_COLORS['text_color'])
+    ax.set_ylabel('콜금리 (%)', fontsize=12, fontweight='bold')
+    ax.grid(True, linestyle='--', alpha=0.3, color=THEME_COLORS['grid_color'])
+    ax.set_ylim(0, 4.5)
+
+    # X축 범위 명시적 설정 (2014년 1월 ~ 2025년 9월만 표시)
+    ax.set_xlim([pd.Timestamp('2014-01-01'), pd.Timestamp('2025-09-30')])
+
+    # 범례 설명 업데이트
+    from matplotlib.patches import Patch
+    legend_elements = [
+        plt.Line2D([0], [0], color=THEME_COLORS['primary_blue'], lw=2,
+                  label='일별 콜금리'),
+        plt.scatter([], [], color=THEME_COLORS['hawkish_red'], s=15,
+                   marker='^', alpha=0.4, label=f'Hawkish ({len(hawkish_points)}일, 1개월 후 ↑)'),
+        plt.scatter([], [], color=THEME_COLORS['dovish_green'], s=15,
+                   marker='v', alpha=0.4, label=f'Dovish ({len(dovish_points)}일, 1개월 후 ↓)'),
+        Patch(color='gray', alpha=0.2, label='월별 문서량 (진할수록 많음)'),
+        plt.Line2D([0], [0], color='darkgray', linestyle='--', alpha=0.5,
+                  label='금통위 결정일')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', frameon=True,
+              fancybox=True, shadow=True, fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig('call_rate_labeling.png', dpi=300, bbox_inches='tight',
+                facecolor='white', transparent=True)
+    plt.close()
+    print("   ✓ Saved call_rate_labeling.png")
+
 def create_confusion_matrix():
     """혼동행렬 시각화"""
-    print("\n5. Creating confusion matrix...")
+    print("\n6. Creating confusion matrix...")
 
     # 모델 통계에서 혼동행렬 정보 가져오기
     stats = load_sentence_nbc_results()
@@ -489,6 +655,7 @@ def main():
     create_label_timeseries()    # 시계열 분리 버전
     create_label_piechart()      # 파이차트 분리 버전
     create_ngram_wordcloud()
+    create_call_rate_labeling()  # 콜금리 라벨링 차트
     create_confusion_matrix()
 
     print("\n" + "="*60)

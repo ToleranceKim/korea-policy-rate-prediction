@@ -1,0 +1,99 @@
+// Data Collection Pipeline
+digraph {
+	bgcolor=white dpi=300 rankdir=TB
+	fontname=Arial fontsize=11
+	graph [nodesep=0.5 ranksep=0.8 splines=ortho]
+	node [fontname=Arial fontsize=10 height=0.6 shape=box style="rounded,filled" width=1.8]
+	edge [fontname=Arial fontsize=9]
+	subgraph cluster_sources {
+		fillcolor="#f0f0f0" fontsize=12 fontweight=bold label="데이터 소스 (365,888개 문서 + 2,907개 시계열)" style="rounded,filled"
+		node [fontweight=bold shape=box3d style=filled]
+		YNA [label="연합뉴스
+69,544개
+(19.4%)" fillcolor="#e3f2fd" fontsize=10]
+		ED [label="이데일리
+112,201개
+(31.2%)" fillcolor="#fff3e0" fontsize=10]
+		IM [label="인포맥스
+177,406개
+(49.4%)" fillcolor="#f3e5f5" fontsize=10]
+		MPB [label="MPB 의사록
+224개 PDF
+(월 2회)" fillcolor="#e8f5e9" fontsize=10]
+		RATE [label="금리 데이터
+콜금리: 2,866개
+기준금리: 41개" fillcolor="#fce4ec" fontsize=10]
+		BOND [label="채권 리포트
+6,515개
+(네이버금융)" fillcolor="#fff8e1" fontsize=10]
+	}
+	subgraph cluster_methods {
+		fillcolor="#f5f5f5" fontsize=12 label="수집 방법" style="rounded,filled"
+		node [shape=ellipse style=filled]
+		API [label="REST API
+JSON Response
+(2016-2025)" fillcolor="#e1f5fe" fontsize=9]
+		CRAWL1 [label="HTML 크롤링
+Scrapy/BS4" fillcolor="#fff3e0" fontsize=9]
+		CRAWL2 [label="Ajax 크롤링
+전체 본문 추출" fillcolor="#f3e5f5" fontsize=9]
+		PDF [label="PDF 크롤링
+PyPDF2 추출" fillcolor="#e8f5e9" fontsize=9]
+		CSV [label="CSV 다운로드
+KOSIS/한은" fillcolor="#fce4ec" fontsize=9]
+	}
+	POOL [label="ThreadPoolExecutor
+max_workers=5
+4,500개/시간 (4.5x↑)" fillcolor="#ffebee" fontsize=11 shape=box3d style="filled,bold"]
+	subgraph cluster_process {
+		fillcolor="#f0f5f0" fontsize=12 label="전처리 파이프라인" style="rounded,filled"
+		node [shape=box style=filled]
+		RETRY [label="재시도 로직
+3회 시도
+Exponential Backoff
+(2s → 4s → 8s)" fillcolor="#fff9c4" fontsize=9]
+		DEDUP [label="중복 제거
+URL + 제목/날짜
+228개 제거 (0.06%)" fillcolor="#f0f4c3" fontsize=9]
+		CLEAN [label="통합 정제
+unified_cleansing.py
+34.6% 노이즈 제거" fillcolor="#dcedc8" fontsize=9]
+		VALID [label="품질 검증
+수집률: 99.8%
+실패: 0.2%" fillcolor="#c8e6c9" fontsize=9]
+	}
+	TOKEN [label="eKoNLPy + Mecab
+형태소 분석
+POS 필터링 (60% 제거)
+13GB → 2.8GB" fillcolor="#e1bee7" fontsize=10 shape=parallelogram style=filled]
+	DB [label="PostgreSQL
+JSONB Storage
+85개 필드 스키마
+Batch Insert (1000)" fillcolor="#c5e1a5" fontsize=11 shape=cylinder style="filled,bold"]
+	YNA -> API [label="2016-2025"]
+	YNA -> CRAWL1 [label="2014-2015" style=dashed]
+	ED -> CRAWL2 [label=Ajax]
+	IM -> CRAWL1 [label=Session]
+	MPB -> PDF [label="토의/결정"]
+	RATE -> CSV [label="일별"]
+	BOND -> CRAWL1 [label="증권사"]
+	API -> POOL
+	CRAWL1 -> POOL
+	CRAWL2 -> POOL
+	PDF -> POOL
+	CSV -> POOL
+	POOL -> RETRY
+	RETRY -> DEDUP
+	DEDUP -> CLEAN
+	CLEAN -> VALID
+	VALID -> TOKEN
+	TOKEN -> DB
+	subgraph cluster_stats {
+		fillcolor="#e8eaf6" fontsize=12 label="최종 결과" style="rounded,filled"
+		STATS [label="총 데이터: 365,888개 문서 + 2,907개 시계열
+처리 시간: 4시간 → 1시간 (75% 단축)
+메모리: 13GB → 48.1MB (99.6% 압축)
+라벨링: 1,852,138개 문장" fillcolor=white fontsize=10 shape=note style=filled]
+	}
+	DB -> STATS [label="완료" style=dashed]
+}
