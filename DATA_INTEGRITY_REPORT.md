@@ -153,7 +153,6 @@ df_call = pd.read_csv('market_call_rates_daily_2014_2025.csv')
 - `modeling/sentence_nbc/model_stats.json`: 성능 결과
 
 ### 시각화 관련
-- `visualizations/portfolio_visualizations.py`: 개선된 시각화
 - `visualizations/real_visualization_generator.py`: 실제 데이터 시각화
 
 ## 🎯 결론

@@ -1,10 +1,10 @@
 # 작업 진행 상황 (PROGRESS.md)
 
-## 프로젝트: MPB Stance Mining - 논문 재현 (FAST TRACK)
-**목표**: "Deciphering Monetary Policy Board Minutes Through Text Mining Approach" 재현  
-**데이터 기간**: 2014-2025년 (12년간)  
-**목표 완료일**: 19일 이내  
-**현재 단계**: Phase 4 - 모델링 완료 및 최적화
+## 프로젝트: MPB Stance Mining - 논문 재현
+**목표**: "Deciphering Monetary Policy Board Minutes Through Text Mining Approach" 재현 및 확장
+**데이터 규모**: 359,151개 뉴스, 224개 MPB 의사록, 6,515개 채권 리포트
+**데이터 기간**: 2014-2025년 (12년간)
+**현재 성과**: F1 Score 71.47% 달성 (논문 67-68% 벤치마크 상회)
 
 ---
 

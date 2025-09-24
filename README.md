@@ -124,9 +124,6 @@ cat modeling/sentence_nbc/model_stats.json
 ```bash
 # 실제 데이터 기반 시각화
 python visualizations/real_visualization_generator.py
-
-# 포트폴리오 시각화
-python visualizations/portfolio_visualizations.py
 ```
 
 
