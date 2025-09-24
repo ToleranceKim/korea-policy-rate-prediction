@@ -92,22 +92,22 @@ def create_pipeline_diagram():
 
     # 수집 방법 박스
     methods = [
-        ('API 호출\n(JSON)', 2),
-        ('웹페이지\n크롤링', 5),
-        ('웹페이지\n크롤링', 8),
-        ('PDF 다운로드\n→텍스트 추출', 10.5),
-        ('한은 사이트\nJS 파싱', 12),
-        ('대한상공회의소\n테이블 추출', 13.5),
-        ('네이버 금융\n페이지 크롤링', 15)
+        ('REST API\nJSON 응답', 2),
+        ('BeautifulSoup\nHTML 파싱', 5),
+        ('BeautifulSoup\nHTML 파싱', 8),
+        ('Scrapy + PyPDF2\nPDF 텍스트 추출', 10.5),
+        ('Scrapy\nJS 데이터 파싱', 12),
+        ('Scrapy\nHTML 테이블', 13.5),
+        ('BeautifulSoup\n리포트 크롤링', 15)
     ]
 
     for text, x in methods:
         # 타원형 박스
-        ellipse = mpatches.Ellipse((x, y_method), width=1.8, height=0.8,
+        ellipse = mpatches.Ellipse((x, y_method), width=2.0, height=0.9,
                                    facecolor='white',
                                    edgecolor=colors['border'], linewidth=1)
         ax.add_patch(ellipse)
-        ax.text(x, y_method, text, fontsize=9, ha='center', va='center', color=colors['text'])
+        ax.text(x, y_method, text, fontsize=8.5, ha='center', va='center', color=colors['text'])
 
     # ===== 3. 처리 방식 레이어 =====
     y_pool = 5.5
@@ -118,9 +118,9 @@ def create_pipeline_diagram():
                              facecolor='white',
                              edgecolor=colors['primary'], linewidth=1.5)
     ax.add_patch(seq_box)
-    ax.text(4.5, y_pool+0.1, '순차 처리', fontsize=10, fontweight='bold',
+    ax.text(4.5, y_pool+0.1, 'Sequential', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(4.5, y_pool-0.15, '뉴스 크롤링', fontsize=9,
+    ax.text(4.5, y_pool-0.15, 'for source in sources', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ThreadPoolExecutor (채권 전용)
@@ -129,28 +129,28 @@ def create_pipeline_diagram():
                               facecolor=colors['light'], alpha=0.8,
                               edgecolor=colors['accent2'], linewidth=2)
     ax.add_patch(pool_box)
-    ax.text(11.5, y_pool+0.1, '병렬 처리', fontsize=10, fontweight='bold',
+    ax.text(11.5, y_pool+0.1, 'ThreadPoolExecutor', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(11.5, y_pool-0.15, '채권 페이지별 동시 수집\n(5 workers)', fontsize=9,
+    ax.text(11.5, y_pool-0.15, 'max_workers=5\nconcurrent.futures', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 4. 전처리 파이프라인 레이어 =====
     y_process = 3.5
 
     processes = [
-        ('실패시 재시도\n3회 (2초 간격)', 3),
-        ('중복 제거\nURL+제목 기준\n(228개, 0.06%)', 6),
-        ('노이즈 제거\n기자명, 이메일,\n특수문자 (34.6%)', 9),
-        ('품질 검증\n수집 성공률\n99.8%', 12)
+        ('Retry Logic\nmax_retries=3\ntime.sleep(2)', 3),
+        ('Deduplication\nhashlib.md5()\nURL+title 기반', 6),
+        ('Regex Cleansing\nre.sub() 패턴\n기자명/태그 제거', 9),
+        ('Validation\n수집률 검증\n99.8% 성공', 12)
     ]
 
     for text, x in processes:
-        box = FancyBboxPatch((x-1.0, y_process-0.5), 2.0, 1.0,
+        box = FancyBboxPatch((x-1.1, y_process-0.5), 2.2, 1.0,
                              boxstyle='round,pad=0.03',
                              facecolor='white',
                              edgecolor=colors['border'], linewidth=1)
         ax.add_patch(box)
-        ax.text(x, y_process, text, fontsize=8.5, ha='center', va='center', color=colors['text'])
+        ax.text(x, y_process, text, fontsize=8, ha='center', va='center', color=colors['text'])
 
     # 전처리 그룹 박스
     process_group = FancyBboxPatch((1.5, y_process-0.7), 12, 1.4,
@@ -168,9 +168,9 @@ def create_pipeline_diagram():
                                facecolor=colors['secondary'], alpha=0.3,
                                edgecolor=colors['primary'], linewidth=1.5)
     ax.add_patch(token_box)
-    ax.text(8, y_token+0.1, '형태소 분석 (eKoNLPy + Mecab)', fontsize=10, fontweight='bold',
+    ax.text(8, y_token+0.1, 'eKoNLPy + Mecab', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(8, y_token-0.15, '품사 태깅 후 명사/동사 추출 | 13GB→2.8GB', fontsize=9,
+    ax.text(8, y_token-0.15, 'POS tagging → NNG/VV/VA 필터링 | 79% 압축', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 6. 저장 레이어 =====
@@ -186,9 +186,9 @@ def create_pipeline_diagram():
                                   facecolor=colors['accent1'], alpha=0.2,
                                   edgecolor=colors['accent1'], linewidth=2)
     ax.add_patch(db_ellipse)
-    ax.text(8, y_db, '데이터베이스 저장', fontsize=10, fontweight='bold',
+    ax.text(8, y_db, 'PostgreSQL JSONB', fontsize=10, fontweight='bold',
             ha='center', va='center', color=colors['text'])
-    ax.text(8, y_db-0.2, 'PostgreSQL (JSON 형식) | 85개 필드', fontsize=9,
+    ax.text(8, y_db-0.2, 'psycopg2.extras.execute_batch() | size=1000', fontsize=9,
             ha='center', va='center', color=colors['text'])
 
     # ===== 화살표 연결 =====
