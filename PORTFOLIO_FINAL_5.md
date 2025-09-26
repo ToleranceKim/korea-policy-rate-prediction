@@ -6,7 +6,7 @@
     
     · 359,151개 금융 뉴스와 224개 MPB 의사록을 분석하여 한국은행 기준금리 방향성(Dovish/Hawkish) 예측
     
-    · 53.4M개 n-gram에서 1.58M개 핵심 특징 추출(97% 노이즈 제거)로 메모리 48.1MB 최적화
+    · 71.2M개 n-gram에서 0.67M개 핵심 특징 추출(99% 노이즈 제거)로 최종 vocabulary 15MB
     
 - **Background**
     
@@ -25,20 +25,21 @@
       - 3회 재시도 로직 구현 (2초 간격)
 
     · **데이터 전처리**: prepare_paper_dataset.py 구현
-      - 85개 필드 스키마 설계 (tokenized_content, pos_tags, sentiment scores)
+      - 9개 테이블, 80개 필드 스키마 설계 (tokenized_content, pos_tags, sentiment scores)
       - PostgreSQL JSONB 저장 구조 설계
       - db_insert_dohy.py 배치 삽입 최적화 (page_size=1000)
       - bond_cleansing.py 정규표현식 정제 파이프라인
 
     · **특징 추출**: ngram_dohy.py 구현
-      - 53.4M → 1.58M n-grams 필터링 (빈도>5, 97% 노이즈 제거)
-      - Counter 기반 chunk 처리로 메모리 48.1MB 최적화
+      - 71.2M → 0.67M n-grams 필터링 (빈도≥15, 99% 노이즈 제거)
+      - Counter 기반 chunk 처리로 최종 vocabulary 15MB 생성
       - eKoNLPy 품사 필터링 (NNG, VA, MAG, VV, VCN)
 
     · **라벨링**: 콜금리 변동 기반 Market-based Approach
-      - 41개 고유 금리 변동점 (중복 제거 후, 2008-2025)
-      - 2개월 후 실제 금리 변화 기반 (±0.01%p 임계값)
-      - 122,315개 기사 → 1,852,138개 문장 라벨 확장
+      - 2,866개 일별 콜금리 데이터 사용 (2014-2025)
+      - 각 날짜마다 1개월 후 콜금리와 비교 (±0.03%p 임계값)
+      - Hawkish 704일, Dovish 639일, 라벨없음 1,523일
+      - 122,315개 기사 → 2,823,248개 문장 라벨 확장
       - 데이터 무결성 검증 및 Step plot 정확 시각화
 
     · **EDA 시각화**: 탐색적 데이터 분석 및 시각화
@@ -56,12 +57,12 @@
 
     · **NBC 모델링**: Naive Bayes Classifier 구현
       - 라플라스 스무딩 (α=1) 적용
-      - Train/Test split (80:20, random_state=33)
+      - Train/Test split (90:10, random_state=33)
 
     · **성능 평가**:
-      - 문장 단위 NBC (성공): F1-Score 79.3% 달성 (1,852,138개 문장, 30회 배깅)
+      - 문장 단위 NBC (성공): F1-Score 71.47% 달성 (2,823,248개 문장, 30회 배깅)
       - 날짜 단위 NBC (과적합): F1-Score 100% (1,405 날짜)
-      - Precision 76.7%, Recall 82.1%, Accuracy 77.4%
+      - Precision 70.22%, Recall 72.77%, Accuracy 67.79%
 
     · **모델 성능 시각화**: nbc_modeling.ipynb
       - confusion_matrix.png: 혼동행렬 히트맵
@@ -79,15 +80,15 @@
       - 연합뉴스 69,544건: API/아카이브 하이브리드, 2,000/시간
     · MPB 의사록: 224건 PDF → PyPDF2 섹션별 자동 추출
     · 금리 데이터:
-      - 일별 콜금리 2,866개 (2014.01-2025.08)
-      - 기준금리 41개 변동점 (중복 제거 후)
+      - 일별 콜금리 2,866개 (2014.01-2025.08) ← **라벨링에 사용**
+      - 기준금리 25개 변경일 (참고용, 라벨링과 무관)
     · 품질 관리:
       - 중복 제거: 228개 (0.06%)
       - 실패 재시도: 3회, 2초 간격
       - 채권 크롤링: ThreadPoolExecutor(5 workers) 페이지 병렬
       - 뉴스 크롤링: BeautifulSoup 순차 처리
       - 금리/MPB: Scrapy 순차 처리
-    · PostgreSQL JSONB 저장 (85개 필드, 배치 1000)
+    · PostgreSQL JSONB 저장 (9개 테이블 80개 필드, 배치 1000)
 
     **② 정제 및 토큰화 (unified_cleansing.py + eKoNLPy)**
     · 통합 정제: 소스별 맞춤 패턴 (연합/이데일리/인포맥스)
@@ -97,16 +98,16 @@
       - 금융 특화 사전: 콜금리, CD금리 복합명사 인식
       - 품사 필터링 (NNG, VA, MAG, VV, VCN): 60% 토큰 제거
     · 성능 최적화:
-      - multiprocessing.Pool(8): 4시간 → 1시간
+      - 코드 최적화: 4시간 → 1시간
       - 배치 처리 1,000건: 메모리 60% 절약
     · 품질 지표:
       - 평균 토큰: 500개 → 120개 (76% 압축)
       - 노이즈 제거율: 34.6% (정제) + 60% (품사)
 
-    **③ N-gram 생성 (53.4M→1.58M)**
-    · 1-5gram 추출: 53,371,110개 초기 생성
-    · 빈도 필터링(>5): 1,577,569개 (97% 노이즈 제거)
-    · Counter 기반 메모리 최적화 → 48.1MB
+    **③ N-gram 생성 (71.2M→0.67M)**
+    · 1-5gram 추출: 71,163,146개 초기 생성
+    · 빈도 필터링(≥15): 670,616개 (99% 노이즈 제거)
+    · Counter 기반 메모리 최적화 → 최종 vocabulary 15MB
 
 1. 데이터 수집: Scrapy 2.11, BeautifulSoup4, requests
    - Scrapy: MPB 의사록, 기준금리, 콜금리
@@ -115,7 +116,7 @@
 
 2. 데이터 전처리: pandas, regex, eKoNLPy 0.97+, PostgreSQL
 
-3. 특징 추출: Counter, multiprocessing.Pool (8 cores)
+3. 특징 추출: Counter, 효율적인 데이터 구조 사용
 
 4. 모델링: scikit-learn 1.0.0+ (NBC), Laplace (α=1)
 
@@ -124,26 +125,26 @@
     **④ NBC 모델링 (Laplace α=1)**
     · Market Approach 라벨링 (Dovish/Hawkish)
     · 라플라스 스무딩 적용 (α=1)
-    · Train/Test split: 1,015/254 (80:20, random_state=33)
+    · Train/Test split: 2,540,923/282,325 (90:10, random_state=33)
 
-    **⑤ 성능 평가 (F1 79.3%)**
-    · Accuracy 77.4%, Precision 76.7%, Recall 82.1%
-    · 혼동행렬: 1.85M 문장 학습 (날짜 단위 대비 1,317배↑)
-    · 라벨 분포: Dovish 47.3% vs Hawkish 52.7% (균형적)
+    **⑤ 성능 평가 (F1 71.47%)**
+    · Accuracy 67.79%, Precision 70.22%, Recall 72.77%
+    · 혼동행렬: 2.82M 문장 학습 (날짜 단위 대비 2,008배↑)
+    · 라벨 분포: Dovish 44.6% vs Hawkish 55.4% (균형적)
     · 시각화: 5개 차트 생성 (visualizations/)
     
 - **KPI 카드**
     - **데이터 처리**
         
-        뉴스 수집률: 359,151/360,000 = 99.8%, 노이즈 제거: 97.0%
+        뉴스 수집률: 359,151/360,000 = 99.8%, 노이즈 제거: 99.0%
         
     - **모델 성능**
 
-        **F1-Score 79.3%** (Precision 76.7%, Recall 82.1%)
+        **F1-Score 71.47%** (Precision 70.22%, Recall 72.77%)
         
     - **시스템 효율**
         
-        처리 시간 **75% 감소** (4h→1h), 메모리 **48.1MB** 최적화
+        처리 시간 **75% 감소** (4h→1h), 전체 프로젝트 **24GB**
         
 
 ---
@@ -203,7 +204,7 @@
     ```
 
 - **데이터 검증 및 품질 관리**
-    - **중복 제거**: URL 기반 1차 체크 + 제목/날짜 조합 2차 체크 → 228개 제거 (0.06%)
+    - **중복 제거**: 제목+내용 문자열 비교 → 228개 제거 (0.06%)
     - **실패 처리**: `failed_urls.json` 별도 저장, 재시도 큐 관리
     - **수집률 모니터링**: 월평균 99.8% 달성, 실패율 0.2% 이하 유지
 
@@ -236,7 +237,7 @@
     ```
 
 - **데이터베이스 최적화**:
-    - PostgreSQL JSONB 저장 (85개 필드 스키마)
+    - PostgreSQL JSONB 저장 (9개 테이블 80개 필드 스키마)
     - 배치 삽입: `psycopg2.extras.execute_values(page_size=1000)`
     - 인덱싱: `CREATE INDEX idx_date ON articles(date)`
     - 메모리 사용: 평균 800MB, 최대 1.5GB
@@ -251,7 +252,7 @@
     |------|--------|-----------|------|-------------|
     | v0 | Lexical (Seed words) | 미구현 | - | 논문 방법론 |
     | v1 | Market Approach (날짜) | 과적합 | F1 100% | 1,405 날짜 |
-    | v1.5 | Market Approach (문장) | 성공 | F1 79.3% | 1.85M 문장 |
+    | v1.5 | Market Approach (문장) | 성공 | F1 71.47% | 2.82M 문장 |
     | v2 | Hybrid (Lex+Market) | 계획 중 | 목표 80% | SentProp 확장 |
     
 - **데이터 구성**
@@ -277,7 +278,7 @@
     
 - **초기 NBC 성능**
     
-    날짜 단위: F1 100% (과적합) → 문장 단위: F1 79.3% (정상화)
+    날짜 단위: F1 100% (과적합) → 문장 단위: F1 71.47% (정상화)
 
     30회 배깅 앙상블로 안정적 성능 확보
     
@@ -357,19 +358,18 @@
     4-gram: ['한국은행 기준 금리 동결']
 
     # 빈도 기반 필터링 (min_frequency = 15)
-    초기 N-gram: 53,371,110개 → 필터 후: 1,577,569개 (97.0% 제거)
+    초기 N-gram: 71,163,146개 → 필터 후: 670,616개 (99.0% 제거)
     ```
 
 - **처리 단계별 성능 메트릭**
 
     | 단계 | 데이터 크기 | 처리 시간 | 메모리 | 손실률 |
     |------|------------|-----------|--------|---------|
-    | 원본 뉴스 | 13GB (359,151 docs) | - | - | 0% |
-    | 정제 후 | 8.5GB | 25분 (8 cores) | 1.2GB | 34.6% |
-    | 토큰화 | 4.2GB | 45분 | 2.5GB | 67.7% |
-    | 품사 필터링 | 2.8GB | 15분 | 1.8GB | 78.5% |
-    | N-gram 생성 | 3.8GB (53M) | 30분 | 4.5GB | - |
-    | 빈도 필터링 | 48.1MB (1.58M) | 5분 | 256MB | 97.0% |
+    | 원본 뉴스 | 5.5GB (359,151 docs) | - | - | 0% |
+    | 정제 후 | 1.1GB | 25분 (최적화) | 1.2GB | 34.6% |
+    | 토큰화 | 1.6GB | 45분 | 2.5GB | 67.7% |
+    | N-gram 생성 | 5.3GB (71M) | 30분 | 4.5GB | - |
+    | 빈도 필터링 | 15MB (0.67M) | 5분 | 256MB | 99.0% |
 
 - **소스별 정제 특징**
 
@@ -402,11 +402,11 @@
 
 - **N-gram 생성 측정값(좌)**
     
-    초기 생성: **53,371,110개** 고유 n-gram
+    초기 생성: **71,163,146개** 고유 n-gram
+
+    빈도 필터(≥15): **670,616개** (99.0% 제거)
     
-    빈도 필터(>5): **1,577,569개** (97.0% 제거)
-    
-    최종 DataFrame: **48.1MB** 메모리
+    최종 vocabulary: **15MB**
     
 - **NGram 클래스 구현(우 상단)**
     ```python
@@ -436,11 +436,11 @@
     
     | 빈도 범위 | N-gram 수 | 누적 비율 | 메모리 |
     |-----------|-----------|-----------|---------|
-    | 1-5회 | 51,793,541 | 97.0% | 제외 |
-    | 6-99회 | 1,486,237 | 99.8% | 포함 |
+    | 1-14회 | 70,492,530 | 99.0% | 제외 |
+    | 15-99회 | 579,284 | 99.8% | 포함 |
     | 100+회 | 91,332 | 100% | 포함 |
     
-    **필터 조건**: `if count > min_frequency` (min_frequency=5)
+    **필터 조건**: `if count >= min_frequency` (min_frequency=15)
     
 - **확률 계산 최적화**
     ```python
@@ -456,18 +456,18 @@
 - **최종 성능 카드(좌 상단)**
 
     **문장 단위 NBC (논문 방법론)**
-    **F1-Score 79.3%** / Accuracy 77.4%
+    **F1-Score 71.47%** / Accuracy 67.79%
 
-    Precision 76.7% / Recall 82.1%
+    Precision 70.22% / Recall 72.77%
 
-    샘플 수: 1,852,138 문장 (날짜 단위 대비 1,317배↑)
+    샘플 수: 2,823,248 문장 (날짜 단위 대비 2,008배↑)
     
 - **혼동 행렬 상세 분석(좌 중단)**
     
     | 실제\예측 | Dovish | Hawkish | 정확도 |
     |-----------|---------|----------|--------|
-    | Dovish(124) | TN: 65 | FP: 59 | 52.4% |
-    | Hawkish(130) | FN: 38 | TP: 92 | 70.8% |
+    | Dovish(83) | TN: 67 | FP: 16 | 80.7% |
+    | Hawkish(83) | FN: 16 | TP: 67 | 80.7% |
     
     Hawkish 재현율이 높은 이유: 클래스 불균형(58.6%)
     
@@ -488,8 +488,8 @@
     | v1 | 단순 BoW | 45.2% | - |
     | v2 | +2-gram | 58.3% | +13.1%p |
     | v3 | +3-5gram | 62.1% | +3.8%p |
-    | v4 | 빈도>5 필터 | 65.48% | +3.38%p |
-    | v5 | 문장 단위 학습 | 79.3% | +13.82%p |
+    | v4 | 빈도≥15 필터 | 65.48% | +3.38%p |
+    | v5 | 문장 단위 학습 | 71.47% | +5.99%p |
     
 - **실패 사례 분석(우 중단)**
     
@@ -505,7 +505,7 @@
     
     **성공 요인**
     
-    · 97% 노이즈 제거로 정밀도 향상
+    · 99% 노이즈 제거로 정밀도 향상
     
     · Market Approach로 객관적 라벨링
     
@@ -535,26 +535,26 @@
 
     **2. 데이터 전처리**
     · 핵심 라이브러리: pandas, numpy, regex
-    · NLP: eKoNLPy 0.97+, Mecab, pykospacing
+    · NLP: eKoNLPy 0.97+, Mecab
     · DB: PostgreSQL (psycopg2-binary 2.9.0)
 
     **3. 특징 추출**
     · N-gram 생성: ast.literal_eval, Counter
-    · 토큰화 병렬화: multiprocessing.Pool (8 cores)
+    · 토큰화 최적화: 효율적인 메모리 사용
     · 메모리 관리: chunk 처리 (100,000개 단위)
 
     **4. 모델링**
     · 베이스라인: NBC (scikit-learn 1.0.0+)
     · 스무딩: Laplace (α=1)
-    · 분할: train_test_split (80:20, random_state=33)
+    · 분할: train_test_split (90:10, random_state=33)
 
     **5. 평가·시각화**
     · 평가지표: F1-Score, Precision, Recall
     · 시각화: matplotlib, seaborn, WordCloud
     · 생성된 시각화:
-      - visualizations/sentence_nbc_performance.png: 문장 NBC 성능 (F1 79.3%)
+      - visualizations/sentence_nbc_performance.png: 문장 NBC 성능 (F1 71.47%)
       - visualizations/data_pipeline.png: 데이터 처리 파이프라인
-      - visualizations/label_distribution.png: 라벨 분포 (47.3% vs 52.7%)
+      - visualizations/label_distribution.png: 라벨 분포 (44.6% vs 55.4%)
       - visualizations/ngram_wordcloud.png: N-gram 워드클라우드
       - visualizations/confusion_matrix.png: 혼동행렬
 
@@ -572,7 +572,7 @@
 
     **데이터 소스(I/O)**
     · 입력: 뉴스(HTML/JSON), MPB(PDF), 금리(CSV)
-    · 중간: PostgreSQL JSONB (85개 필드)
+    · 중간: PostgreSQL JSONB (9개 테이블 80개 필드)
     · 산출: N-grams(JSON), NBC모델(PKL),
              결과(CSV), 시각화(PNG), 리포트(MD)
 
@@ -594,13 +594,13 @@
 
 **데이터 처리**
 - 359,151개 금융 뉴스 수집 (99.8% 수집률)
-- 1.85M 문장 분리 및 처리
-- 53.4M → 1.58M n-gram 필터링 (97% 노이즈 제거)
+- 2.82M 문장 분리 및 처리
+- 71.2M → 0.67M n-gram 필터링 (99% 노이즈 제거)
 
 **모델링 성과**
-- 문장 단위 NBC: F1-Score 79.3% 달성
+- 문장 단위 NBC: F1-Score 71.47% 달성
 - 30회 배깅으로 안정적 성능 확보
-- 날짜 단위 과적합 문제 해결 (F1 100% → 79.3%)
+- 날짜 단위 과적합 문제 해결 (F1 100% → 71.47%)
 
 **기술적 성취**
 - 논문 방법론 재현 및 개선
@@ -610,7 +610,7 @@
 **핵심 발견**
 - Out-of-domain 평가의 중요성 확인
 - 문장 단위 처리가 날짜 단위보다 효과적
-- 샘플 수 증가 (1,405 → 1.85M)로 과적합 해결
+- 샘플 수 증가 (1,405 → 2.82M)로 과적합 해결
 
 ---
 

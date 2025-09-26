@@ -171,15 +171,23 @@ class SentenceNBC:
 
         # 앙상블 예측 (다수결 투표)
         all_predictions = []
+        all_probabilities = []  # 확률 저장 추가
 
         for model, vectorizer in zip(self.models, self.vectorizers):
             X_test = vectorizer.transform(X_test_dict)
             y_pred = model.predict(X_test)
+            y_proba = model.predict_proba(X_test)  # 확률 예측
             all_predictions.append(y_pred)
+            all_probabilities.append(y_proba[:, 1])  # Hawkish 확률
 
         # 다수결 투표
         ensemble_pred = np.array(all_predictions).mean(axis=0)
+        ensemble_proba = np.array(all_probabilities).mean(axis=0)  # 평균 확률
         ensemble_pred = (ensemble_pred >= 0.5).astype(int)
+
+        # 확률 저장 (PR 곡선용)
+        self.test_labels = y_test
+        self.test_proba = ensemble_proba
 
         # 성능 메트릭
         accuracy = accuracy_score(y_test, ensemble_pred)
@@ -313,12 +321,23 @@ def main():
         'ensemble_recall': float(recall),
         'ensemble_f1': float(f1),
         'hawkish_ngrams': len(hawkish_ngrams),
-        'dovish_ngrams': len(dovish_ngrams)
+        'dovish_ngrams': len(dovish_ngrams),
+        'confusion_matrix': cm.tolist()  # 혼동행렬 추가
     }
 
     with open(output_dir / "model_stats.json", 'w') as f:
         json.dump(stats, f, indent=2)
     print(f"✓ Saved model_stats.json")
+
+    # PR 곡선용 데이터 저장
+    if hasattr(nbc, 'test_labels') and hasattr(nbc, 'test_proba'):
+        pr_data = {
+            'true_labels': nbc.test_labels.tolist(),
+            'predicted_proba': nbc.test_proba.tolist()
+        }
+        with open(output_dir / "pr_curve_data.json", 'w') as f:
+            json.dump(pr_data, f)
+        print(f"✓ Saved pr_curve_data.json")
 
     print("\n" + "="*60)
     print("✅ Sentence NBC training complete!")

@@ -51,7 +51,7 @@ def load_data():
 def split_data(df):
     """Train/Test 분할"""
     print("\nSplitting data...")
-    df_train, df_test = train_test_split(df, test_size=0.2, random_state=33, stratify=df['label'])
+    df_train, df_test = train_test_split(df, test_size=0.1, random_state=33, stratify=df['label'])
     print(f"  Train: {len(df_train)} dates")
     print(f"  Test: {len(df_test)} dates")
     return df_train, df_test

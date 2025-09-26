@@ -65,7 +65,7 @@ unified_cleansing.py
 	TOKEN [label="eKoNLPy + Mecab
 형태소 분석
 POS 필터링 (60% 제거)
-13GB → 2.8GB" fillcolor="#e1bee7" fontsize=10 shape=parallelogram style=filled]
+원본 5.5GB → N-gram 7.5GB" fillcolor="#e1bee7" fontsize=10 shape=parallelogram style=filled]
 	DB [label="PostgreSQL
 JSONB Storage
 85개 필드 스키마
@@ -92,7 +92,8 @@ Batch Insert (1000)" fillcolor="#c5e1a5" fontsize=11 shape=cylinder style="fille
 		fillcolor="#e8eaf6" fontsize=12 label="최종 결과" style="rounded,filled"
 		STATS [label="총 데이터: 365,888개 문서 + 2,907개 시계열
 처리 시간: 4시간 → 1시간 (75% 단축)
-메모리: 13GB → 48.1MB (99.6% 압축)
+전체 프로젝트: 22GB+ (crawler 5.7GB, preprocess 10GB, modeling 5.4GB)
+최종 vocabulary: 15MB (1.9M n-grams)
 라벨링: 1,852,138개 문장" fillcolor=white fontsize=10 shape=note style=filled]
 	}
 	DB -> STATS [label="완료" style=dashed]

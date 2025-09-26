@@ -37,9 +37,25 @@ class SentenceNgramExtractor:
         # 최소 빈도수 (논문: 15회)
         self.min_frequency = 15
 
+    def is_english_sentence(self, sentence):
+        """영어 문장 여부 판단 (간단한 휴리스틱)"""
+        # ASCII 문자 비율 계산
+        ascii_count = sum(1 for char in sentence if ord(char) < 128)
+        total_count = len(sentence)
+
+        if total_count == 0:
+            return False
+
+        # 70% 이상이 ASCII 문자면 영어 문장으로 간주
+        return (ascii_count / total_count) > 0.7
+
     def tokenize_sentence(self, sentence):
         """문장 토큰화 및 POS 필터링"""
         try:
+            # 영어 문장은 건너뛰기 (논문에서 한국어 텍스트 대상으로 명시)
+            if self.is_english_sentence(sentence):
+                return []
+
             # Mecab POS 태깅
             tokens_with_pos = self.mecab.pos(sentence)
 
@@ -53,12 +69,38 @@ class SentenceNgramExtractor:
         except:
             return []
 
+    def is_valid_ngram(self, ngram):
+        """중복 단어 필터링 (논문에 없지만 필수)"""
+        words = ngram.split()
+
+        # 단일 단어는 통과
+        if len(words) == 1:
+            return True
+
+        # 연속 중복 제거
+        for i in range(len(words)-1):
+            if words[i] == words[i+1]:
+                return False
+
+        # 전체 단어의 50% 이상이 같은 단어인 경우 제거
+        if len(words) > 2:
+            word_counts = {}
+            for word in words:
+                word_counts[word] = word_counts.get(word, 0) + 1
+            max_count = max(word_counts.values())
+            if max_count > len(words) / 2:
+                return False
+
+        return True
+
     def extract_ngrams(self, tokens, n):
         """토큰 리스트에서 n-gram 추출"""
         ngrams = []
         for i in range(len(tokens) - n + 1):
             ngram = ' '.join(tokens[i:i+n])
-            ngrams.append(ngram)
+            # 유효성 검사 추가
+            if self.is_valid_ngram(ngram):
+                ngrams.append(ngram)
         return ngrams
 
     def process_sentences(self, df_sentences):
@@ -68,6 +110,9 @@ class SentenceNgramExtractor:
         # 문장별 n-gram 저장
         sentence_ngrams = []
         ngram_frequency = Counter()
+        sentence_counter = 0  # 고유 sentence_id 카운터
+        english_count = 0  # 영어 문장 카운트
+        empty_token_count = 0  # 빈 토큰 카운트
 
         # 배치 처리
         batch_size = 10000
@@ -78,12 +123,18 @@ class SentenceNgramExtractor:
             end_idx = min((batch_idx + 1) * batch_size, len(df_sentences))
             batch_df = df_sentences.iloc[start_idx:end_idx]
 
-            for _, row in batch_df.iterrows():
+            for idx, row in batch_df.iterrows():
                 sentence = row['sentence']
+
+                # 영어 문장 체크
+                if self.is_english_sentence(sentence):
+                    english_count += 1
+                    continue
 
                 # 토큰화
                 tokens = self.tokenize_sentence(sentence)
                 if not tokens:
+                    empty_token_count += 1
                     continue
 
                 # 각 n에 대해 n-gram 추출
@@ -100,17 +151,26 @@ class SentenceNgramExtractor:
                 # 문장별 결과 저장
                 if all_ngrams:
                     sentence_ngrams.append({
-                        'sentence_id': start_idx + len(sentence_ngrams),
+                        'sentence_id': sentence_counter,  # 고유 ID 사용
                         'pk': row['pk'],
                         'date': row['date'],
                         'label': row['label'],
                         'ngrams': all_ngrams,
                         'sentence': sentence
                     })
+                    sentence_counter += 1
 
             # 중간 저장 (메모리 관리)
             if (batch_idx + 1) % 10 == 0:
                 print(f"  Processed {end_idx:,} sentences, {len(ngram_frequency):,} unique n-grams")
+
+        # 처리 통계 출력
+        print(f"\nProcessing statistics:")
+        print(f"  Total sentences: {len(df_sentences):,}")
+        print(f"  English sentences (filtered): {english_count:,}")
+        print(f"  Empty tokens (filtered): {empty_token_count:,}")
+        print(f"  Valid sentences processed: {len(sentence_ngrams):,}")
+        print(f"  Unique n-grams extracted: {len(ngram_frequency):,}")
 
         return sentence_ngrams, ngram_frequency
 

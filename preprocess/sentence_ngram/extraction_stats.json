@@ -1,15 +1,15 @@
 {
   "total_sentences": 2824981,
-  "sentences_with_ngrams": 2823248,
-  "total_unique_ngrams": 71163146,
-  "filtered_ngrams": 670616,
+  "sentences_with_ngrams": 2775544,
+  "total_unique_ngrams": 68523946,
+  "filtered_ngrams": 638632,
   "min_frequency": 15,
   "ngram_range": "1-5",
   "pos_filter": [
-    "MAG",
     "VCN",
+    "NNG",
     "VV",
     "VA",
-    "NNG"
+    "MAG"
   ]
 }

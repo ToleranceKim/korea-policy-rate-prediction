@@ -28,7 +28,7 @@ def create_pipeline_diagram():
 
     # ===== 1단계: 데이터 소스 (최상단) =====
     with dot.subgraph(name='cluster_sources') as c:
-        c.attr(label='데이터 소스 (365,888개 문서 + 2,907개 시계열)',
+        c.attr(label='데이터 소스 (365,890개 문서 + 2,891개 시계열)',
                style='rounded,filled', fillcolor='#f0f0f0', fontsize='12', fontweight='bold')
         c.attr('node', shape='box3d', style='filled', fontweight='bold')
 
@@ -72,7 +72,7 @@ def create_pipeline_diagram():
                fillcolor='#c8e6c9', fontsize='9')
 
     # ===== 5단계: 토큰화 =====
-    dot.node('TOKEN', 'eKoNLPy + Mecab\n형태소 분석\nPOS 필터링 (60% 제거)\n13GB → 2.8GB',
+    dot.node('TOKEN', 'eKoNLPy + Mecab\n형태소 분석\nPOS 필터링 (60% 제거)\n원본 5.5GB → N-gram 7.5GB',
              shape='parallelogram', style='filled', fillcolor='#e1bee7', fontsize='10')
 
     # ===== 6단계: 저장 =====
@@ -108,10 +108,11 @@ def create_pipeline_diagram():
     # ===== 통계 정보 추가 =====
     with dot.subgraph(name='cluster_stats') as c:
         c.attr(label='최종 결과', style='rounded,filled', fillcolor='#e8eaf6', fontsize='12')
-        c.node('STATS', '''총 데이터: 365,888개 문서 + 2,907개 시계열
+        c.node('STATS', '''총 데이터: 365,890개 문서 + 2,891개 시계열
 처리 시간: 4시간 → 1시간 (75% 단축)
-메모리: 13GB → 48.1MB (99.6% 압축)
-라벨링: 1,852,138개 문장''',
+전체 프로젝트: 24GB (crawler 5.6GB, preprocess 10GB, modeling 5.4GB)
+최종 vocabulary: 15MB (1.9M n-grams)
+라벨링: 2,823,248개 문장''',
                shape='note', style='filled', fillcolor='white', fontsize='10')
 
     dot.edge('DB', 'STATS', style='dashed', label='완료')
